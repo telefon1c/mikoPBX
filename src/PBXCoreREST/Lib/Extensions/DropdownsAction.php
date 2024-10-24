@@ -184,8 +184,12 @@ class DropdownsAction extends Injectable
             $obj = $relation['object'];
 
             // Check if the related object belongs to a module
-            if (strpos(get_class($obj), 'Modules\\') === 0) {
-                $moduleUniqueID = explode('Models\\', get_class($obj))[1];
+            $className = get_class($obj);
+            [$param1,$moduleUniqueID,$param2] = explode('\\', $className);
+            $idFound = ('Modules' === $param1 && $param2 === 'Models');
+
+            if ( !$idFound && strpos($className, 'Modules\\') === 0) {
+                $moduleUniqueID = explode('Models\\', $className)[1];
             }
         }
 
