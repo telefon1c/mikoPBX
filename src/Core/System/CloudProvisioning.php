@@ -25,7 +25,6 @@ use MikoPBX\Core\System\CloudProvisioning\AWSCloud;
 use MikoPBX\Core\System\CloudProvisioning\AzureCloud;
 use MikoPBX\Core\System\CloudProvisioning\CloudProvider;
 use MikoPBX\Core\System\CloudProvisioning\GoogleCloud;
-use MikoPBX\Core\System\CloudProvisioning\Selectel;
 use MikoPBX\Core\System\CloudProvisioning\VKCloud;
 use MikoPBX\Core\System\CloudProvisioning\YandexCloud;
 
