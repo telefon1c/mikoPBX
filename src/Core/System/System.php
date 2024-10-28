@@ -219,7 +219,7 @@ class System extends Injectable
         $cutPath     = Util::which('cut');
 
         // Get OpenSSL directory and cert file
-        $openSslDir  = trim(shell_exec("$openSslPath version -d | $cutPath -d '\"' -f 2"));
+        $openSslDir  = trim(shell_exec("$openSslPath version -d | $cutPath -d '\"' -f 2")??'');
         $certFile    = "$openSslDir/certs/ca-certificates.crt";
         $tmpFile     = tempnam('/tmp', 'cert-');
         $rawData     = file_get_contents($certFile);
@@ -229,7 +229,7 @@ class System extends Injectable
                 continue;
             }
             file_put_contents($tmpFile, $cert);
-            $hash = trim(shell_exec("$openSslPath x509 -subject_hash -noout -in '$tmpFile'"));
+            $hash = trim(shell_exec("$openSslPath x509 -subject_hash -noout -in '$tmpFile'")??'');
             rename($tmpFile, "$openSslDir/certs/$hash.0");
         }
         if (file_exists($tmpFile)) {

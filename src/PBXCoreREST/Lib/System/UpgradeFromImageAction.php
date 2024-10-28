@@ -153,7 +153,7 @@ class UpgradeFromImageAction extends Injectable
         $awk = Util::which('awk');
         $storageDeviceFile = self::STORAGE_DEVICE;
         $cmd = "$grep $($cat $storageDeviceFile) < /etc/fstab | $awk -F'[= ]' '{ print \$2}'";
-        return trim(shell_exec($cmd));
+        return trim(shell_exec($cmd)??'');
     }
 
     /**
@@ -166,7 +166,7 @@ class UpgradeFromImageAction extends Injectable
         $grep = Util::which('grep');
         $awk = Util::which('awk');
         $cmd = "$grep '/cf' < /etc/fstab | $awk -F'[= ]' '{ print \$2}'";
-        return trim(shell_exec($cmd));
+        return trim(shell_exec($cmd)??'');
     }
 
     /**

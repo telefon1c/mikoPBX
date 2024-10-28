@@ -67,7 +67,7 @@ class SystemConfiguration extends Injectable
         $sort    = Util::which('sort');
         $find    = Util::which('find');
         $cut    = Util::which('cut');
-        $lastBackUp  = trim(shell_exec("$find $tmpMountDir/dev/*$backupDir -type f -printf '%T@ %p\\n' | $sort -n | $tail -1 | $cut -f2- -d' '"));
+        $lastBackUp  = trim(shell_exec("$find $tmpMountDir/dev/*$backupDir -type f -printf '%T@ %p\\n' | $sort -n | $tail -1 | $cut -f2- -d' '")??'');
         if (!empty($lastBackUp)) {
             $rm     = Util::which('rm');
             $gzip   = Util::which('gzip');

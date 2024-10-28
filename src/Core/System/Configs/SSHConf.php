@@ -277,7 +277,7 @@ class SSHConf extends Injectable
         $cut = Util::which('cut');
         $sed = Util::which('sed');
 
-        $currentGroupId = trim(shell_exec("$cat /etc/passwd | grep '^$sshLogin:' | $cut -f 3 -d ':'"));
+        $currentGroupId = trim(shell_exec("$cat /etc/passwd | grep '^$sshLogin:' | $cut -f 3 -d ':'")??'');
         shell_exec("$sed -i 's/$sshLogin:x:$currentGroupId:/$sshLogin:x:0:/g' /etc/passwd");
     }
 }

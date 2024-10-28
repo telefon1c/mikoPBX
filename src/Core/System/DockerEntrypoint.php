@@ -123,7 +123,7 @@ class DockerEntrypoint extends Injectable
         $cut = Util::which('cut');
         $chown = Util::which('chown');
         $chgrp = Util::which('chgrp');
-        $currentUserId = trim(shell_exec("$grep '^$userID:' < /etc/shadow | $cut -d ':' -f 3"));
+        $currentUserId = trim(shell_exec("$grep '^$userID:' < /etc/shadow | $cut -d ':' -f 3")??'');
         if ($currentUserId !== '' && !empty($newUserId) && $currentUserId !== $newUserId) {
             SystemMessages::sysLogMsg(__METHOD__, " - Old $userID user id: $currentUserId; New $userID user id: $newUserId", LOG_DEBUG);
             $commands[] = "$sed -i 's/$userID:x:$currentUserId:/$userID:x:$newUserId:/g' /etc/shadow*";
@@ -137,7 +137,7 @@ class DockerEntrypoint extends Injectable
             }
         }
 
-        $currentGroupId = trim(shell_exec("$grep '^$userID:' < /etc/group | $cut -d ':' -f 3"));
+        $currentGroupId = trim(shell_exec("$grep '^$userID:' < /etc/group | $cut -d ':' -f 3")??'');
         if ($currentGroupId !== '' && !empty($newGroupId) && $currentGroupId !== $newGroupId) {
             SystemMessages::sysLogMsg(__METHOD__, " - Old $userID group id: $currentGroupId; New $userID group id: $newGroupId", LOG_DEBUG);
             $commands[] = "$sed -i 's/$userID:x:$currentGroupId:/$userID:x:$newGroupId:/g' /etc/group";

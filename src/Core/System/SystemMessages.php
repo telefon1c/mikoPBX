@@ -141,7 +141,7 @@ class SystemMessages extends Injectable
      */
     public static function getCountCols(): string
     {
-        $len = 1 * trim(shell_exec('tput cols'));
+        $len = 1 * trim(shell_exec('tput cols')??'');
 
         // If the count of columns is zero, set it to a default value of 80
         if ($len === 0) {
