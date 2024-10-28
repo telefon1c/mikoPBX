@@ -56,8 +56,7 @@ class CloudProvisioning
             VKCloud::CloudID => new VKCloud(),
             GoogleCloud::CloudID => new GoogleCloud(),
             AzureCloud::CloudID => new AzureCloud(),
-            AWSCloud::CloudID => new AWSCloud(),
-            Selectel::CloudID => new Selectel(),
+            AWSCloud::CloudID => new AWSCloud()
         ];
 
         foreach ($providers as $cloudId => $provider) {
