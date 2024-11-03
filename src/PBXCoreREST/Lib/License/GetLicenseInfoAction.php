@@ -57,13 +57,19 @@ class GetLicenseInfoAction extends Injectable
             if ($lastGetLicenseInfo === null) {
                 $license = $di->get(MarketPlaceProvider::SERVICE_NAME);
                 $licenseInfo =  $license->getLicenseInfo($licenseKey);
-                if ($licenseInfo instanceof SimpleXMLElement) {
-                    $res->success = true;
-                    $res->data['licenseInfo'] = json_encode($licenseInfo);
+                if ($licenseInfo["success"]) {
+                    if ($licenseInfo["result"] instanceof SimpleXMLElement) {
+                        $res->success = true;
+                        $res->data['licenseInfo'] = json_encode($licenseInfo["result"]);
+                    }
+                    // Check not often than every 2 minutes
+                    $managedCache->set($cacheKey, $res->data['licenseInfo'], 120);
+                } else {
+                    $res->success = false;
+                    $res->messages[] = $licenseInfo["error"];
                 }
-                $managedCache->set($cacheKey, $res->data['licenseInfo'], 120); // Check not often than every 2 minutes
             } else {
-                $res->data['licenseInfo']=$lastGetLicenseInfo;
+                $res->data['licenseInfo'] = $lastGetLicenseInfo;
                 $res->success = true;
             }
         } else {

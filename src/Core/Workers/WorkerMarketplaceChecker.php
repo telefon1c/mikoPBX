@@ -76,8 +76,13 @@ class WorkerMarketplaceChecker extends WorkerBase
             $lastGetLicenseInfo = $managedCache->get(self::CACHE_KEY_LICENSE_INFO . ':' . $licenseKey);
             if ($lastGetLicenseInfo === null) {
                 $regInfo = $lic->getLicenseInfo($licenseKey);
-                if ($regInfo instanceof SimpleXMLElement) {
-                    file_put_contents(MarketPlaceProvider::LIC_FILE_PATH, json_encode($regInfo->attributes()));
+                if ($regInfo["success"]) {
+                    if ($regInfo["result"] instanceof SimpleXMLElement) {
+                        file_put_contents(
+                            MarketPlaceProvider::LIC_FILE_PATH,
+                            json_encode($regInfo["result"]->attributes())
+                        );
+                    }
                 }
             }
             $managedCache->set(self::CACHE_KEY_LICENSE_INFO, time(), 86400 + $randomTTLShift); // Check every day
