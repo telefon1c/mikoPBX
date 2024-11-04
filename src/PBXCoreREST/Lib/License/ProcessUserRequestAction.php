@@ -56,18 +56,18 @@ class ProcessUserRequestAction extends Injectable
             $oldLicKey = $mikoPBXConfig->getGeneralSettings(PbxSettings::PBX_LICENSE);
             if ($oldLicKey !== $data['licKey']) {
                 $licenseInfo = $license->getLicenseInfo($data['licKey']);
-                if ($licenseInfo instanceof SimpleXMLElement) {
+                if ($licenseInfo['success'] && $licenseInfo['result'] instanceof SimpleXMLElement) {
                     $mikoPBXConfig->setGeneralSettings(PbxSettings::PBX_LICENSE, $data['licKey']);
                     $license->changeLicenseKey($data['licKey']);
                     $license->addTrial('11'); // MikoPBX forever license
                     $res->data[PbxSettings::PBX_LICENSE] = $data['licKey'];
                     $res->messages['info'][] = $translation->_('lic_SuccessfulActivation');
                     $res->success = true;
-                } elseif (!empty($licenseInfo) && str_contains($licenseInfo, '2026')) {
+                } elseif (!$licenseInfo['success'] && str_contains($licenseInfo['error'], '2026')) {
                     $res->messages['license'][] = $translation->_('lic_FailedCheckLicense2026');
                     $res->success = false;
-                } elseif (!empty($licenseInfo)) {
-                    $res->messages['license'][] = $licenseInfo;
+                } elseif (!$licenseInfo['success'] && !empty($licenseInfo['error'])) {
+                    $res->messages['license'][] = $licenseInfo['error'];
                     $res->success = false;
                 } else {
                     $res->messages['license'][] = $translation->_('lic_FailedCheckLicense');
