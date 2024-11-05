@@ -135,7 +135,7 @@
         <tr class="rule-row" id="{{ rule['id'] }}">
             <td class="collapsing">
                 <div class="ui fitted toggle checkbox" data-did="{{ rule['number'] }}" data-context-id="{{ rule['context-id'] }}">
-                    <input type="checkbox" {% if rule['status']!=='disabled' %} checked {% endif %}
+                    <input type="checkbox" {% if rule['status']!=='disabled' %} checked='on' value='on' {% endif %}
                            name="rule-{{ rule['id'] }}" data-value="{{ rule['id'] }}">
                     <label for="rule-{{ rule['id'] }}"></label>
                 </div>

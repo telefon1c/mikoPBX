@@ -85,6 +85,10 @@ class OutOffWorkTimeController extends BaseController
         $this->view->indexTable = $timeframesTable;
     }
 
+    /**
+     * Changes the priority of the OutWorkTimes data based on the provided priority table.
+     * @return void
+     */
     public function changePriorityAction(): void
     {
         $this->view->disable();
@@ -113,7 +117,8 @@ class OutOffWorkTimeController extends BaseController
      */
     public function modifyAction(string $id = ''): void
     {
-        // Find the OutWorkTimes data based on the provided ID or create a new one if the ID is not provided or not found.
+        // Find the OutWorkTimes data based on the provided ID
+        // or create a new one if the ID is not provided or not found.
         $timeFrame = OutWorkTimes::findFirstById($id);
         if ($timeFrame === null) {
             $timeFrame = new OutWorkTimes();
@@ -159,7 +164,8 @@ class OutOffWorkTimeController extends BaseController
             $weekDays[$i] = $this->translation->_(date('D', strtotime("Sunday +$i days")));
         }
 
-        // Create a new TimeFrameEditForm object with the $timeFrame and arrays for the forwarding extensions, audio messages, available actions, and week days.
+        // Create a new TimeFrameEditForm object with the $timeFrame
+        // and arrays for the forwarding extensions, audio messages, available actions, and week days.
         $form = new TimeFrameEditForm(
             $timeFrame,
             [
@@ -170,7 +176,7 @@ class OutOffWorkTimeController extends BaseController
             ]
         );
 
-        // Set the form and the represent value of the $timeFrame object to the view.
+        // Set the form and the represented value of the $timeFrame object to the view.
         $this->view->form = $form;
         $this->view->represent = $timeFrame->getRepresent();
 
@@ -196,7 +202,8 @@ class OutOffWorkTimeController extends BaseController
             if ($providerData['registration_type'] === Sip::REG_TYPE_INBOUND || empty($providerData['host'])) {
                 $providersId[$providerData['uniqid']] = $providerData['uniqid'];
             } else {
-                $providersId[$providerData['uniqid']] = SIPConf::getContextId($providerData['host'], $providerData['port']);
+                $providersId[$providerData['uniqid']]
+                    = SIPConf::getContextId($providerData['host'], $providerData['port']);
             }
         }
         unset($data);
@@ -226,7 +233,7 @@ class OutOffWorkTimeController extends BaseController
                 'extension' => $rule->extension,
                 'callerid'  => $extension ? $extension->getRepresent() : '',
                 'note'      => $rule->note,
-                'status'    => in_array($rule->id, $allowedRulesIds, true) ? '' : 'disabled',
+                'status'    => in_array($rule->id, $allowedRulesIds, false) ? '' : 'disabled',
             ];
 
             $routingTable[] = $values;
@@ -339,11 +346,11 @@ class OutOffWorkTimeController extends BaseController
     /**
      * Saves allowed outbound rules for a given time condition
      *
-     * @param $data
+     * @param array $data
      *
      * @return bool
      */
-    private function saveAllowedOutboundRules($data): bool
+    private function saveAllowedOutboundRules(array $data): bool
     {
         // Step 1: Delete old links to rules associated with the time condition.
         $parameters = [
