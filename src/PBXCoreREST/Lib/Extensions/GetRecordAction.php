@@ -122,7 +122,6 @@ class GetRecordAction extends Injectable
             $dataFromRequest = [];
         } else {
             $dataFromRequest = $extension->toArray();
-            $dataFromRequest['sip_manualattributes'] = base64_decode($dataFromRequest['sip_manualattributes']);
         }
 
         $dataStructure = new DataStructure($dataFromRequest);
