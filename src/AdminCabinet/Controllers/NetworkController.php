@@ -164,7 +164,7 @@ class NetworkController extends BaseController
     {
         $isDocker = Util::isDocker();
         foreach ($eth as $name => $value) {
-            $itIsInternetInterfce = $eth->id === $data['internet_interface'];
+            $itIsInternetInterfce = intval($eth->id) === intval($data['internet_interface']);
             switch ($name) {
                 case 'topology':
                     if ($itIsInternetInterfce) {
