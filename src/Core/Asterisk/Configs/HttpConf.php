@@ -64,7 +64,7 @@ class HttpConf extends AsteriskConfigClass
                 $data   = Util::generateSslCert();
                 $s_data = implode("\n", $data);
             }
-            $conf .= "tlsenable=yes\n" .
+            $conf .= "tlsenable=$enabled\n" .
                 "tlsbindaddr=0.0.0.0:{$this->generalSettings[PbxSettings::AJAM_PORT_TLS]}\n" .
                 "tlscertfile=$keys_dir/ajam.pem\n" .
                 "tlsprivatekey=$keys_dir/ajam.pem\n";
