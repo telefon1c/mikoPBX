@@ -1,4 +1,5 @@
 <?php
+
 /*
  * MikoPBX - free phone system for small business
  * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
@@ -24,7 +25,6 @@ use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
 
 class CheckDropdownsOnDeleteQueueTest extends MikoPBXTestsBase
 {
-
     /**
      * Set up before each test
      *
@@ -50,6 +50,10 @@ class CheckDropdownsOnDeleteQueueTest extends MikoPBXTestsBase
      */
     public function testDropdownsOnCreateDeleteQueue(array $params): void
     {
+        // Look at the current call queue content
+        $this->clickSidebarMenuItemByHref('/admin-cabinet/call-queues/index/');
+        sleep(5);
+
         // Routing
         $this->clickSidebarMenuItemByHref('/admin-cabinet/incoming-routes/index/');
         $this->clickButtonByHref('/admin-cabinet/incoming-routes/modify');
@@ -76,6 +80,10 @@ class CheckDropdownsOnDeleteQueueTest extends MikoPBXTestsBase
         // Create Call queue
         $createCallQueue = new CreateCallQueueTest();
         $createCallQueue->testCreateCallQueue($this->additionProvider()['Accountant department for test dropdown'][0]);
+
+        // Look at the current call queue content after creating
+        $this->clickSidebarMenuItemByHref('/admin-cabinet/call-queues/index/');
+        sleep(5);
 
         // Routing
         $this->clickSidebarMenuItemByHref('/admin-cabinet/incoming-routes/index/');

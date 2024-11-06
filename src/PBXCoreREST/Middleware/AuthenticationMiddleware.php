@@ -1,4 +1,5 @@
 <?php
+
 /*
  * MikoPBX - free phone system for small business
  * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
@@ -29,7 +30,6 @@ use MikoPBX\PBXCoreREST\Providers\ResponseProvider;
 use MikoPBX\PBXCoreREST\Traits\ResponseTrait;
 use Phalcon\Mvc\Micro;
 use Phalcon\Mvc\Micro\MiddlewareInterface;
-
 
 /**
  * Class AuthenticationMiddleware
@@ -70,18 +70,19 @@ class AuthenticationMiddleware implements MiddlewareInterface
             return false;
         }
 
-        if (true !== $isNoAuthApi
-         && true !== $request->isLocalHostRequest()
-         && true !== $request->isAllowedAction($application)) {
+        if (
+            true !== $isNoAuthApi
+            && true !== $request->isLocalHostRequest()
+            && true !== $request->isAllowedAction($application)
+        ) {
              $this->halt(
                  $application,
-                $response::FORBIDDEN,
-                'The route is not allowed'
-            );
+                 $response::FORBIDDEN,
+                 'The route is not allowed'
+             );
             return false;
         }
 
         return true;
     }
-
 }

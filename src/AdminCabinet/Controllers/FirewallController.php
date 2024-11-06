@@ -432,22 +432,26 @@ class FirewallController extends BaseController
     }
 
     /**
-     * Sort array. The localnet and 0.0.0.0 should be at the first position on the list
+     * Compare two network entries for sorting
      *
-     * @param $a
-     * @param $b
-     *
-     * @return bool
+     * @param array $a First network entry
+     * @param array $b Second network entry
+     * @return int Returns -1 if $a should be placed before $b,
+     *             1 if $a should be placed after $b,
+     *             0 if they are considered equal
      */
-    private function sortArrayByNetwork($a, $b): bool
+    private function sortArrayByNetwork(array $a, array $b): int
     {
+        // If second entry is permanent and first is not 0.0.0.0/0
         if ($b['permanent'] && $a['network'] !== '0.0.0.0/0') {
-            return true;
-        }
-        if ($b['network'] === '0.0.0.0/0') {
-            return true;
+            return 1; // Move $a after $b
         }
 
-        return false;
+        // If second entry is 0.0.0.0/0
+        if ($b['network'] === '0.0.0.0/0') {
+            return 1; // Move $a after $b
+        }
+
+        return -1; // In all other cases, move $a before $b
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * MikoPBX - free phone system for small business
  * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
@@ -165,8 +166,8 @@ ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDZ3hd6/gqPxMMCqFytFdVznYD3Debp2LKTRiJEaS2S
 
         $params[] = [
             [
-                PbxSettings::PBX_NAME                 => 'Тестовая 72',
-                PbxSettings::PBX_DESCRIPTION            => 'log: admin  pass: 123456789MikoPBX#1 last test:' . date("Y-m-d H:i:s"),
+                PbxSettings::PBX_NAME                => 'Тестовая 72',
+                PbxSettings::PBX_DESCRIPTION         => 'log: admin  pass: 123456789MikoPBX#1 last test:' . date("Y-m-d H:i:s"),
                 PbxSettings::PBX_LANGUAGE            => 'en-en',
                 PbxSettings::PBX_RECORD_CALLS         => true,
                 PbxSettings::SEND_METRICS            => false,
