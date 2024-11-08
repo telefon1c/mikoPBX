@@ -737,7 +737,7 @@ class SIPConf extends AsteriskConfigClass
 
         // Iterate through each data provider
         foreach ($this->data_providers as $provider) {
-            $manual_attributes = Util::parseIniSettings(base64_decode($provider['manualattributes'] ?? ''));
+            $manual_attributes = Util::parseIniSettings($provider['manualattributes'] ?? '');
 
             // Generate registration strings for outbound registration type
             if ($provider['registration_type'] === Sip::REG_TYPE_OUTBOUND) {
@@ -1089,11 +1089,7 @@ class SIPConf extends AsteriskConfigClass
         self::getToneZone($options, $language);
 
         // Override PJSIP options from modules
-        $options = $this->overridePJSIPOptionsFromModules(
-            $provider['uniqid'],
-            $options,
-            AsteriskConfigInterface::OVERRIDE_PROVIDER_PJSIP_OPTIONS
-        );
+        $options = $this->overridePJSIPOptionsFromModules($provider['uniqid'], $options, AsteriskConfigInterface::OVERRIDE_PROVIDER_PJSIP_OPTIONS);
 
         // Add configuration section header
         $conf    .= "[{$provider['uniqid']}]" . PHP_EOL;

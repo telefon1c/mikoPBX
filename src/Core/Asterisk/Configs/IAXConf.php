@@ -103,7 +103,7 @@ class IAXConf extends AsteriskConfigClass
         $lang      = str_replace('_', '-', strtolower($this->generalSettings[PbxSettings::PBX_LANGUAGE]));
         $providers = $this->getProviders();
         foreach ($providers as $provider) {
-            $manual_attributes = Util::parseIniSettings(base64_decode($provider['manualattributes']));
+            $manual_attributes = Util::parseIniSettings($provider['manualattributes']);
             $options = [
                 'type' => 'friend',
                 'auth' => 'plaintext',

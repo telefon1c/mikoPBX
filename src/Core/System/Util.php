@@ -742,12 +742,14 @@ class Util
         $manual_attributes = implode("\n", $tmp_arr);
         // TRIMMING END
 
+        $haveSection = strpos($manual_attributes, '[') !== false;
+
         $manual_data = [];
         $sections = explode("\n[", str_replace(']', '', $manual_attributes));
         foreach ($sections as $section) {
             $data_rows = explode("\n", trim($section));
             $section_name = trim($data_rows[0] ?? '');
-            if (empty($section_name) || !str_contains($section_name, '=')) {
+            if (!$haveSection && str_contains($section_name, '=')) {
                 // Noname section
                 $section_name = ' ';
             } else {
@@ -773,7 +775,12 @@ class Util
                 if (($value !== '0' && empty($value)) || empty($key)) {
                     continue;
                 }
-                $manual_data[$section_name][$key] = $value;
+                if( ('set_var' === $key && $section_name === 'endpoint') ||
+                    ('setvar'  === $key && $section_name === ' ')) {
+                    $manual_data[$section_name][$key][] = $value;
+                }else{
+                    $manual_data[$section_name][$key] = $value;
+                }
             }
         }
 
