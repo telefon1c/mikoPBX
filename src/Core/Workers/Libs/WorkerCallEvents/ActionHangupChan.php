@@ -161,6 +161,24 @@ class ActionHangupChan
             }
         }
 
+        // The SRC channel has been completed and DST channel has not been created
+        $filter = [
+            'verbose_call_id=:verbose_call_id: AND endtime = "" AND dst_chan = "" AND src_chan = :src_chan:',
+            'bind' => [
+                'verbose_call_id' => $data['verbose_call_id'],
+                'src_chan' => $data['agi_channel'],
+            ],
+        ];
+        $m_data = CallDetailRecordsTmp::find($filter);
+        foreach ($m_data as $row) {
+            $row->writeAttribute('endtime', $row->start);
+            $row->writeAttribute('transfer', 0);
+            $res = $row->update();
+            if (!$res) {
+                SystemMessages::sysLogMsg('Action_hangup_chan', implode(' ', $row->getMessages()), LOG_DEBUG);
+            }
+        }
+
         self::regMissedCall($data, $countRows);
     }
 
