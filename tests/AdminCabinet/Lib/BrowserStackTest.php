@@ -33,12 +33,32 @@ abstract class BrowserStackTest extends TestCase
 {
     protected const WAIT_TIMEOUT = 30;
     protected const DEFAULT_SCREENSHOT_DIR = 'test-screenshots';
+    protected const INITIALIZATION_TIMEOUT = 120000;
 
-    protected static RemoteWebDriver $driver;
-    protected static BrowserStackLocal $bs_local;
+    /**
+     * WebDriver instance
+     * @var RemoteWebDriver|null
+     */
+    protected static ?RemoteWebDriver $driver = null;
+
+    /**
+     * BrowserStack Local instance
+     * @var BrowserStackLocal|null
+     */
+    protected static ?BrowserStackLocal $bs_local = null;
+
+    /**
+     * Test status tracking
+     */
     protected static bool $testResult;
     protected static array $failureConditions;
-    protected static GuzzleHttpClient $httpClient;
+
+    /**
+     * HTTP Client for BrowserStack API
+     * @var GuzzleHttpClient|null
+     */
+    protected static ?GuzzleHttpClient $httpClient = null;
+
 
     /**
      * Configure and start BrowserStack session
@@ -47,16 +67,30 @@ abstract class BrowserStackTest extends TestCase
      */
     public static function setUpBeforeClass(): void
     {
-        self::initializeHttpClient();
-        self::setupBrowserStackCapabilities();
-        self::initializeTestState();
+        try {
+            self::initializeHttpClient();
+            self::setupBrowserStackCapabilities();
+            self::initializeTestState();
+        } catch (\Exception $e) {
+            throw new RuntimeException(
+                "Failed to initialize BrowserStack test environment: " . $e->getMessage(),
+                0,
+                $e
+            );
+        }
     }
 
     /**
      * Initialize HTTP client for API requests
+     *
+     * @throws RuntimeException
      */
     private static function initializeHttpClient(): void
     {
+        if (!isset($GLOBALS['BROWSERSTACK_USERNAME']) || !isset($GLOBALS['BROWSERSTACK_ACCESS_KEY'])) {
+            throw new RuntimeException('BrowserStack credentials not configured');
+        }
+
         self::$httpClient = new GuzzleHttpClient([
             'base_uri' => 'https://api.browserstack.com',
             'auth' => [
@@ -69,10 +103,14 @@ abstract class BrowserStackTest extends TestCase
     /**
      * Setup BrowserStack capabilities and start session
      *
-     * @throws \BrowserStack\LocalException
+     * @throws \BrowserStack\LocalException|RuntimeException
      */
     private static function setupBrowserStackCapabilities(): void
     {
+        if (!isset($GLOBALS['CONFIG'])) {
+            throw new RuntimeException('BrowserStack configuration not found');
+        }
+
         $CONFIG = $GLOBALS['CONFIG'];
         $taskId = (int)getenv('TASK_ID') ?: 0;
 
@@ -86,7 +124,33 @@ abstract class BrowserStackTest extends TestCase
             $CONFIG['server']
         );
 
-        self::$driver = RemoteWebDriver::create($url, $caps, 120000, 120000);
+        try {
+            self::$driver = RemoteWebDriver::create(
+                $url,
+                $caps,
+                self::INITIALIZATION_TIMEOUT,
+                self::INITIALIZATION_TIMEOUT
+            );
+
+            if (!self::$driver) {
+                throw new RuntimeException('Failed to create RemoteWebDriver instance');
+            }
+        } catch (\Exception $e) {
+            throw new RuntimeException(
+                "Failed to initialize WebDriver: " . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+    }
+
+    /**
+     * Initialize test state
+     */
+    private static function initializeTestState(): void
+    {
+        self::$testResult = true;
+        self::$failureConditions = [];
     }
 
     /**
@@ -129,45 +193,64 @@ abstract class BrowserStackTest extends TestCase
         }
     }
 
-    /**
-     * Initialize test state variables
-     */
-    private static function initializeTestState(): void
-    {
-        self::$testResult = true;
-        self::$failureConditions = [];
-    }
 
     /**
      * Set up before each test
      *
-     * @throws GuzzleException
+     * @throws GuzzleException|RuntimeException
      */
     protected function setUp(): void
     {
         parent::setUp();
-        // $this->updateTestSessionName();
-        $this->prepareTestEnvironment();
+
+        if (!self::$driver) {
+            throw new RuntimeException('WebDriver not initialized');
+        }
+
+        try {
+            $this->updateTestSessionName();
+            $this->prepareTestEnvironment();
+        } catch (\Exception $e) {
+            throw new RuntimeException(
+                "Failed to set up test environment: " . $e->getMessage(),
+                0,
+                $e
+            );
+        }
     }
 
-//    /**
-//     * Update test session name in BrowserStack
-//     *
-//     * @throws GuzzleException
-//     */
-//    private function updateTestSessionName(): void
-//    {
-//        $sessionId = self::$driver->getSessionID();
-//        self::$httpClient->request('PUT', "/automate/sessions/{$sessionId}.json", [
-//            'json' => ['name' => $this->getName(true)]
-//        ]);
-//    }
+    /**
+     * Update test session name in BrowserStack
+     *
+     * @throws GuzzleException
+     */
+    private function updateTestSessionName(): void
+    {
+        if (!self::$driver || !self::$httpClient) {
+            return;
+        }
+
+        $sessionId = self::$driver->getSessionID();
+        self::$httpClient->request('PUT', "/automate/sessions/{$sessionId}.json", [
+            'json' => ['name' => $this->getName(true)]
+        ]);
+    }
 
     /**
      * Prepare test environment
+     *
+     * @throws RuntimeException
      */
     private function prepareTestEnvironment(): void
     {
+        if (!self::$driver) {
+            throw new RuntimeException('WebDriver not initialized');
+        }
+
+        if (!isset($GLOBALS['SERVER_PBX'])) {
+            throw new RuntimeException('SERVER_PBX not configured');
+        }
+
         self::$driver->manage()->window()->maximize();
         self::$driver->get($GLOBALS['SERVER_PBX']);
     }
@@ -256,13 +339,26 @@ abstract class BrowserStackTest extends TestCase
     }
 
     /**
-     * Cleanup test resources
+     * Cleanup test resources safely
      */
     private static function cleanupResources(): void
     {
-        self::$driver->quit();
-        if (isset(self::$bs_local) && self::$bs_local) {
-            self::$bs_local->stop();
+        try {
+            if (self::$driver) {
+                self::$driver->quit();
+                self::$driver = null;
+            }
+        } catch (\Exception $e) {
+            error_log("Failed to quit WebDriver: " . $e->getMessage());
+        }
+
+        try {
+            if (self::$bs_local) {
+                self::$bs_local->stop();
+                self::$bs_local = null;
+            }
+        } catch (\Exception $e) {
+            error_log("Failed to stop BrowserStack Local: " . $e->getMessage());
         }
     }
 }

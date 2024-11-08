@@ -136,6 +136,8 @@ trait LoginTrait
 
         if (!$this->isUserLoggedIn()) {
             throw new RuntimeException('Login failed: Credentials not accepted');
+        } else {
+            $this->assertTrue(true);
         }
 
         // Save successful login cookies

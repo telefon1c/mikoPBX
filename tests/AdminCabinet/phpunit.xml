@@ -106,15 +106,4 @@
             <directory>Tests/PBXExtensions</directory>
         </testsuite>
     </testsuites>
-     <!-- Добавляем конфигурацию параллельного выполнения -->
-     <parallel processIsolation="true" maxProcess="3" maxBatchSize="3">
-         <exclude>
-             <group>disabled</group>
-         </exclude>
-     </parallel>
-     <!-- Настройки для параллельного выполнения -->
-     <php>
-         <env name="BROWSERSTACK_PARALLEL_RUNS" value="true"/>
-         <env name="BROWSERSTACK_LOCAL" value="true"/>
-     </php>
 </phpunit>
