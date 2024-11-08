@@ -146,22 +146,22 @@ abstract class BrowserStackTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->updateTestSessionName();
+        // $this->updateTestSessionName();
         $this->prepareTestEnvironment();
     }
 
-    /**
-     * Update test session name in BrowserStack
-     *
-     * @throws GuzzleException
-     */
-    private function updateTestSessionName(): void
-    {
-        $sessionId = self::$driver->getSessionID();
-        self::$httpClient->request('PUT', "/automate/sessions/{$sessionId}.json", [
-            'json' => ['name' => $this->getName(true)]
-        ]);
-    }
+//    /**
+//     * Update test session name in BrowserStack
+//     *
+//     * @throws GuzzleException
+//     */
+//    private function updateTestSessionName(): void
+//    {
+//        $sessionId = self::$driver->getSessionID();
+//        self::$httpClient->request('PUT', "/automate/sessions/{$sessionId}.json", [
+//            'json' => ['name' => $this->getName(true)]
+//        ]);
+//    }
 
     /**
      * Prepare test environment

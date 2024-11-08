@@ -32,13 +32,14 @@
         "sentry/sdk": "^3.3.0"
     },
     "require-dev": {
-      "roave/security-advisories": "dev-master",
+        "roave/security-advisories": "dev-master",
         "phpunit/phpunit-selenium": "^9.0",
         "php-webdriver/webdriver": "^1.14.0",
         "browserstack/browserstack-local": "^v1.1.0",
         "phpunit/phpunit": "^9.0",
         "phalcon/ide-stubs": "^5.0.0",
-        "squizlabs/php_codesniffer": "*"
+        "squizlabs/php_codesniffer": "*",
+        "brianium/paratest": "*"
     },
     "autoload": {
         "psr-4": {

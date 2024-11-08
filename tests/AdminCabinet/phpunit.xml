@@ -107,7 +107,7 @@
         </testsuite>
     </testsuites>
      <!-- Добавляем конфигурацию параллельного выполнения -->
-     <parallel processIsolation="true" maxProcess="5" maxBatchSize="5">
+     <parallel processIsolation="true" maxProcess="3" maxBatchSize="3">
          <exclude>
              <group>disabled</group>
          </exclude>
