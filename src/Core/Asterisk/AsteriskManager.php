@@ -1399,6 +1399,7 @@ class AsteriskManager
         $peers  = [];
         $result = $this->sendRequestTimeout('PJSIPShowEndpoints');
         $endpoints = $result['data']['EndpointList'] ?? [];
+        print_r($endpoints);
         foreach ($endpoints as $peer) {
             if ($peer['ObjectName'] === 'anonymous') {
                 continue;
@@ -1406,6 +1407,7 @@ class AsteriskManager
             $state_array = [
                 'Not in use' => 'OK',
                 'Busy'       => 'OK',
+                'Ringing'    => 'OK'
             ];
             $state       = $state_array[$peer['DeviceState']] ?? 'UNKNOWN';
             $oldAState   = $peers[$peer['Auths']]['state'] ?? '';
@@ -1415,8 +1417,9 @@ class AsteriskManager
             }
 
             $peers[$peer['Auths']] = [
-                'id'        => $peer['Auths'],
-                'state'     => strtoupper($state)
+                'id'             => $peer['Auths'],
+                'state'          => strtoupper($state),
+                'detailed-state' => $peer['DeviceState']
             ];
         }
         return array_values($peers);
