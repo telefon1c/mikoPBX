@@ -18,41 +18,103 @@
 
  <phpunit bootstrap="../../vendor/autoload.php">
     <testsuites>
-        <testsuite name="TestMikoPBX">
+        <testsuite name="TestMikoPBXPasswords">
             <file>Tests/ChangeWeakPasswordTest.php</file>
-            <file>Tests/FillPBXSettingsTest.php</file>
-            <file>Tests/CustomFileChangeTest.php</file>
+        </testsuite>
+
+        <testsuite name="Extensions">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/Extensions</directory>
+            <file>Tests/ChangeExtensionsSettingsTest.php</file>
+            <file>Tests/DeleteExtensionTest.php</file>
+            <file>Tests/DeleteExtensionFromDropDownTest.php</file>
+            <file>Tests/CheckDropdownsOnAddExtensionsTest.php</file>
+        </testsuite>
+
+        <testsuite name="Providers">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/SIPProviders</directory>
+            <directory>Tests/IAXProviders</directory>
+            <file>Tests/DeleteProviderTest.php</file>
+        </testsuite>
+
+        <testsuite name="IVR Menu">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/IVRMenus</directory>
+        </testsuite>
+
+        <testsuite name="Call Queues">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/CallQueues</directory>
+            <file>Tests/ChangeCallQueueTest.php</file>
+            <file>Tests/CheckDropdownsOnDeleteQueueTest.php</file>
+        </testsuite>
+
+        <testsuite name="AMI Users">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/AMIUsers</directory>
+        </testsuite>
+
+        <testsuite name="Out Of Work Periods">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/OutOfWorkPeriods</directory>
+        </testsuite>
+
+        <testsuite name="Firewall Rules">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/FirewallRules</directory>
+        </testsuite>
+
+        <testsuite name="MOHFiles">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/MOHFiles</directory>
+        </testsuite>
+
+        <testsuite name="AudioFiles">
+            <file>Tests/LoginTest.php</file>
             <file>Tests/CheckDropdownBeforeCreateAudioFileTest.php</file>
-            <file>Tests/CreateAudioFilesTest.php</file>
+            <directory>Tests/AudioFiles</directory>
             <file>Tests/CheckDropdownAfterCreateAudioFileTest.php</file>
             <file>Tests/DeleteAudioFileTest.php</file>
             <file>Tests/CheckDropdownAfterDeleteAudioFileTest.php</file>
-            <file>Tests/CreateSIPProvidersTest.php</file>
-            <file>Tests/CreateIAXProvidersTest.php</file>
-            <file>Tests/CreateIncomingCallRules.php</file>
+        </testsuite>
+
+        <testsuite name="IncomingCallRules">
+            <file>Tests/LoginTest.php</file>
             <file>Tests/CreateDefaultIncomingCallRule.php</file>
-            <file>Tests/CreateOutgoingCallRulesTest.php</file>
-            <file>Tests/CreateOutOfWorkPeriodsTest.php</file>
-            <file>Tests/CreateCallQueueTest.php</file>
-            <file>Tests/CreateIVRMenusTest.php</file>
-            <file>Tests/CreateExtensionsTest.php</file>
+            <directory>Tests/IncomingCallRules</directory>
+        </testsuite>
+
+        <testsuite name="IncomingCallRules">
+            <file>Tests/LoginTest.php</file>
+            <directory>Tests/OutgoingCallRules</directory>
+        </testsuite>
+
+        <testsuite name="OtherTestMikoPBX">
+            <file>Tests/FillPBXSettingsTest.php</file>
+            <file>Tests/CustomFileChangeTest.php</file>
             <file>Tests/FillDataTimeSettingsTest.php</file>
-            <file>Tests/CreateMOHAudioFilesTest.php</file>
-            <file>Tests/CreateAmiUsersTest.php</file>
             <file>Tests/CreateFail2BanRulesTest.php</file>
-            <file>Tests/CreateFirewallRulesTest.php</file>
             <file>Tests/CreateConferenceRoomsTest.php</file>
             <file>Tests/CreateDialPlanApplicationTest.php</file>
             <file>Tests/NetworkInterfacesTest.php</file>
-            <file>Tests/ChangeExtensionsSettingsTest.php</file>
-            <file>Tests/ChangeCallQueueTest.php</file>
-            <file>Tests/DeleteExtensionTest.php</file>
-            <file>Tests/DeleteExtensionFromDropDownTest.php</file>
-            <file>Tests/DeleteProviderTest.php</file>
-            <file>Tests/CheckDropdownsOnAddExtensionsTest.php</file>
-            <file>Tests/CheckDropdownsOnDeleteQueueTest.php</file>
+        </testsuite>
+
+        <testsuite name="PBXExtensions">
+            <file>Tests/LoginTest.php</file>
             <file>Tests/ChangeLicenseKeyTest.php</file>
-            <file>Tests/InstallModulesTest.php</file>
+            <directory>Tests/PBXExtensions</directory>
         </testsuite>
     </testsuites>
+     <!-- Добавляем конфигурацию параллельного выполнения -->
+     <parallel processIsolation="true" maxProcess="5" maxBatchSize="5">
+         <exclude>
+             <group>disabled</group>
+         </exclude>
+     </parallel>
+     <!-- Настройки для параллельного выполнения -->
+     <php>
+         <env name="BROWSERSTACK_PARALLEL_RUNS" value="true"/>
+         <env name="BROWSERSTACK_LOCAL" value="true"/>
+     </php>
 </phpunit>

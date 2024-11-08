@@ -1,192 +1,141 @@
 <?php
 
-/*
- * MikoPBX - free phone system for small business
- * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program.
- * If not, see <https://www.gnu.org/licenses/>.
- */
-
 namespace MikoPBX\Tests\AdminCabinet\Tests;
 
 use Facebook\WebDriver\WebDriverBy;
-use GuzzleHttp\Exception\GuzzleException;
-use MikoPBX\Common\Models\PbxSettings;
 use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
+use MikoPBX\Tests\AdminCabinet\Tests\Data\PBXSettingsDataFactory;
+use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
+use MikoPBX\Tests\AdminCabinet\Tests\Traits\TabNavigationTrait;
 
 /**
- * Class to test the filling of PBX settings in the admin cabinet.
+ * Class to test PBX settings configuration
  */
 class FillPBXSettingsTest extends MikoPBXTestsBase
 {
-    /**
-     * Set up before each test
-     *
-     * @throws GuzzleException
-     * @throws \Exception
-     */
-    public function setUp(): void
+    use LoginTrait;
+    use TabNavigationTrait;
+
+    private static bool $isLoggedIn = false;
+
+    protected function setUp(): void
     {
         parent::setUp();
+        $this->initializeCookieManager();
+        if (!self::$isLoggedIn) {
+            $loginData = $this->loginDataProvider();
+            $this->testLogin($loginData[0][0]);
+            self::$isLoggedIn = true;
+        }
+
         $this->setSessionName("Test: Fill general settings");
     }
 
     /**
-     * Test to fill PBX settings.
-     * @depends testLogin
-     * @dataProvider additionProvider
-     *
-     * @param array $dataSet The parameters for the test.
+     * Test PBX settings configuration
      */
-    public function testFillPBXSettings(array $dataSet): void
+    public function testFillPBXSettings(): void
+    {
+        $settings = PBXSettingsDataFactory::getSettings();
+        self::annotate("Configuring PBX settings");
+
+        try {
+            $this->navigateToSettings();
+            $this->fillSettings($settings);
+            $this->verifySettings($settings);
+            self::annotate("Successfully configured PBX settings", 'success');
+        } catch (\Exception $e) {
+            self::annotate("Failed to configure PBX settings", 'error');
+            throw $e;
+        }
+    }
+
+    /**
+     * Navigate to settings page
+     */
+    protected function navigateToSettings(): void
     {
         $this->clickSidebarMenuItemByHref("/admin-cabinet/general-settings/modify/");
+    }
 
-        foreach ($dataSet as $key => $value) {
-            $this->findElementOnPageAndFillValue($key, $value);
+    /**
+     * Fill settings with provided values
+     */
+    protected function fillSettings(array $settings): void
+    {
+        foreach ($settings as $key => $value) {
+            $this->fillSetting($key, $value);
         }
-
         $this->submitForm('general-settings-form');
+    }
 
-        $this->clickSidebarMenuItemByHref("/admin-cabinet/general-settings/modify/");
+    /**
+     * Fill single setting
+     */
+    protected function fillSetting(string $key, $value): void
+    {
+        if ($tab = $this->findElementTab($key)) {
+            $this->navigateToTab($tab);
 
-        foreach ($dataSet as $key => $value) {
-            $this->findElementOnPageAndCheckValue($key, $value);
+            if (is_bool($value)) {
+                $this->changeCheckBoxState($key, $value, true);
+            } elseif ($this->isDropdown($key)) {
+                $this->selectDropdownItem($key, $value);
+            } elseif ($this->isTextArea($key)) {
+                $this->changeTextAreaValue($key, $value, true);
+            } else {
+                $this->changeInputField($key, $value, true);
+            }
         }
     }
 
     /**
-     * Find an element on the page and fill its value.
-     *
-     * @param string $key The name of the element.
-     * @param mixed $value The value to fill.
+     * Verify settings values
      */
-    private function findElementOnPageAndFillValue(string $key, $value): void
+    protected function verifySettings(array $settings): void
     {
-        $xpath = '//input[@name="' . $key . '"]/ancestor::div[contains(@class, "ui") and contains(@class ,"tab")]';
+        $this->navigateToSettings();
 
-        $inputItemPages = self::$driver->findElements(WebDriverBy::xpath($xpath));
-
-        foreach ($inputItemPages as $inputItemPage) {
-            $elementPage = $inputItemPage->getAttribute('data-tab');
-            $this->clickOnLeftTabByDataTab($elementPage);
-            $this->changeInputField($key, $value, true);
-            $this->changeCheckBoxState($key, $value, true);
-        }
-
-        $xpath             = '//textarea[@name="' . $key . '"]/ancestor::div[contains(@class, "ui") and contains(@class ,"tab")]';
-        $textAreaItemPages = self::$driver->findElements(WebDriverBy::xpath($xpath));
-
-        foreach ($textAreaItemPages as $textAreaItemPage) {
-            $elementPage = $textAreaItemPage->getAttribute('data-tab');
-            $this->clickOnLeftTabByDataTab($elementPage);
-            $this->changeTextAreaValue($key, $value, true);
-        }
-
-        $xpath           = '//select[@name="' . $key . '"]/ancestor::div[contains(@class, "ui") and contains(@class ,"tab")]';
-        $selectItemPages = self::$driver->findElements(WebDriverBy::xpath($xpath));
-
-        foreach ($selectItemPages as $selectItemPage) {
-            $elementPage = $selectItemPage->getAttribute('data-tab');
-            $this->clickOnLeftTabByDataTab($elementPage);
-            $this->selectDropdownItem($key, $value);
+        foreach ($settings as $key => $value) {
+            $this->verifySetting($key, $value);
         }
     }
 
     /**
-     * Find an element on the page and check its value.
-     *
-     * @param string $key The name of the element.
-     * @param mixed $value The expected value.
+     * Verify single setting
      */
-    private function findElementOnPageAndCheckValue(string $key, $value): void
+    protected function verifySetting(string $key, $value): void
     {
-        $xpath          = '//input[@name="' . $key . '"]/ancestor::div[contains(@class, "ui") and contains(@class ,"tab")]';
-        $inputItemPages = self::$driver->findElements(WebDriverBy::xpath($xpath));
+        if ($tab = $this->findElementTab($key)) {
+            $this->navigateToTab($tab);
 
-        foreach ($inputItemPages as $inputItemPage) {
-            $elementPage = $inputItemPage->getAttribute('data-tab');
-            $this->clickOnLeftTabByDataTab($elementPage);
-            $this->assertInputFieldValueEqual($key, $value, true);
-            $this->assertCheckBoxStageIsEqual($key, $value, true);
-        }
-
-        $xpath             = '//textarea[@name="' . $key . '"]/ancestor::div[contains(@class, "ui") and contains(@class ,"tab")]';
-        $textAreaItemPages = self::$driver->findElements(WebDriverBy::xpath($xpath));
-
-        foreach ($textAreaItemPages as $textAreaItemPage) {
-            $elementPage = $textAreaItemPage->getAttribute('data-tab');
-            $this->clickOnLeftTabByDataTab($elementPage);
-            $this->assertTextAreaValueIsEqual($key, $value);
-        }
-
-        $xpath           = '//select[@name="' . $key . '"]/ancestor::div[contains(@class, "ui") and contains(@class ,"tab")]';
-        $selectItemPages = self::$driver->findElements(WebDriverBy::xpath($xpath));
-
-        foreach ($selectItemPages as $selectItemPage) {
-            $elementPage = $selectItemPage->getAttribute('data-tab');
-            $this->clickOnLeftTabByDataTab($elementPage);
-            $this->assertMenuItemSelected($key, $value);
+            if (is_bool($value)) {
+                $this->assertCheckBoxStageIsEqual($key, $value, true);
+            } elseif ($this->isDropdown($key)) {
+                $this->assertMenuItemSelected($key, $value);
+            } elseif ($this->isTextArea($key)) {
+                $this->assertTextAreaValueIsEqual($key, $value);
+            } else {
+                $this->assertInputFieldValueEqual($key, $value, true);
+            }
         }
     }
 
     /**
-     * Change the page by clicking on a left tab.
-     *
-     * @param string $identifier The data-tab attribute of the tab.
+     * Check if element is dropdown
      */
-    private function clickOnLeftTabByDataTab(string $identifier): void
+    private function isDropdown(string $key): bool
     {
-        $xpath = "//div[@id='general-settings-menu']//ancestor::a[@data-tab='{$identifier}']";
-        $tab = self::$driver->findElement(WebDriverBy::xpath($xpath));
-        $tab->click();
+        $xpath = sprintf('//select[@name="%s"]', $key);
+        return count(self::$driver->findElements(WebDriverBy::xpath($xpath))) > 0;
     }
 
     /**
-     * Dataset provider for PBX settings.
-     *
-     * @return array
+     * Check if element is textarea
      */
-    public function additionProvider(): array
+    private function isTextArea(string $key): bool
     {
-        $params            = [];
-        $SSHAuthorizedKeys = 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAuzhViulNR4CXHvTfz8XVdrHq/Hmb3tZP9tFvwzEPtUmSK9ZihL2w45GhEkgXROKM4fY4Ii/KmZq+K2raWFUM54r7A83WseaAZpQM649WbJFVXPOwK6gDJtU/DaL4aSCsZwqhd6eE07ELVLnvjtQMvHqGd3lHI1zn/JnXZ55VDSTPqxDIApgCa5z8yNNXf3JGx5O+teHkG2pgh1Cnki7CE/aYzNWJW6ybq9rXQa6hGna53TuNfS1DwQ2LgF3bGG+Pl7PKCbU2CesqFw6uyGlWvdtF//GmZXEuy1FZNP1f5dHqyIxxanJOcd6rI1tkIZjtckrpIyfytC2coKZKJgX2aQ== nbek@miko.ru
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDZ3hd6/gqPxMMCqFytFdVznYD3Debp2LKTRiJEaS2SSIRHtE9jMNJjCfMR3CnScjKFh19Hfg/SJf2/rmXIJOHNjZvZZ7GgPTMBYllj3okniCA4/vQQRd6FMVPa9Rhu+N2kyMoQcuDEhzL5kEw0ge5BJJcmNjzW+an3fKqB7QwfMQ== jorikfon@MacBook-Pro-Nikolay.local';
-
-        $params[] = [
-            [
-                PbxSettings::PBX_NAME                => 'Тестовая 72',
-                PbxSettings::PBX_DESCRIPTION         => 'log: admin  pass: 123456789MikoPBX#1 last test:' . date("Y-m-d H:i:s"),
-                PbxSettings::PBX_LANGUAGE            => 'en-en',
-                PbxSettings::PBX_RECORD_CALLS         => true,
-                PbxSettings::SEND_METRICS            => false,
-                PbxSettings::SSH_AUTHORIZED_KEYS      => $SSHAuthorizedKeys,
-                'codec_alaw'             => true,
-                'codec_ulaw'             => false,
-                'codec_g726'             => true,
-                'codec_gsm'              => false,
-                'codec_adpcm'            => true,
-                'codec_g722'             => false,
-                'codec_ilbc'             => true,
-                'codec_opus'             => false,
-                'codec_h264'             => true,
-                'codec_h263'             => false,
-                'codec_h263p'            => true,
-                PbxSettings::PBX_RECORD_SAVE_PERIOD    => '90'
-            ],
-        ];
-
-        return $params;
+        $xpath = sprintf('//textarea[@name="%s"]', $key);
+        return count(self::$driver->findElements(WebDriverBy::xpath($xpath))) > 0;
     }
 }

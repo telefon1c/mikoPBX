@@ -1,4 +1,5 @@
 <?php
+
 /*
  * MikoPBX - free phone system for small business
  * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
@@ -19,11 +20,30 @@
 
 namespace MikoPBX\Tests\AdminCabinet\Tests;
 
+use Facebook\WebDriver\WebDriverBy;
 use GuzzleHttp\Exception\GuzzleException;
 use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
+use MikoPBX\Tests\AdminCabinet\Tests\Data\EmployeeDataFactory;
+use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
 
+/**
+ * Test class for checking dropdowns behavior before and after extension creation
+ */
 class CheckDropdownsOnAddExtensionsTest extends MikoPBXTestsBase
 {
+    use LoginTrait;
+
+    private static bool $isLoggedIn = false;
+    private array $employeeData;
+
+    /**
+     * Set up before class
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        self::$isLoggedIn = false;
+    }
 
     /**
      * Set up before each test
@@ -31,100 +51,165 @@ class CheckDropdownsOnAddExtensionsTest extends MikoPBXTestsBase
      * @throws GuzzleException
      * @throws \Exception
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
-        $this->setSessionName("Test: Check extension selection dropdown menus after adding extensions");
+        $this->initializeCookieManager();
+        if (!self::$isLoggedIn) {
+            $loginData = $this->loginDataProvider();
+            $this->testLogin($loginData[0][0]);
+            self::$isLoggedIn = true;
+        }
+
+        $this->employeeData = EmployeeDataFactory::getEmployeeData('nikita.telegrafov');
+        $this->setSessionName("Test: Check extension selection dropdown menus");
     }
 
     /**
-     * Test checking dropdown menus when adding extensions.
-     *
-     * @depends testLogin
-     * @dataProvider additionProvider
-     *
-     * @param array $params The parameters for the extension.
+     * Test checking dropdown menus before extension creation
      *
      * @throws \Facebook\WebDriver\Exception\NoSuchElementException
      * @throws \Facebook\WebDriver\Exception\TimeoutException
      */
-    public function testDropdownsOnCreateExtension(array $params): void
+    public function testDropdownsBeforeCreation(): void
     {
-        // Routing
+        $extensionTPL = sprintf('%s <%s>', $this->employeeData['username'], $this->employeeData['number']);
+
+        // Check Incoming Routes dropdown
         $this->clickSidebarMenuItemByHref('/admin-cabinet/incoming-routes/index/');
         $this->clickButtonByHref('/admin-cabinet/incoming-routes/modify');
 
-        // Prepare user representation
-        $extensionTPL = sprintf('%s <%s>', $params['username'] , $params['number']);
-
         $elementFound = $this->checkIfElementExistOnDropdownMenu('extension', $extensionTPL);
-
-        // Asserts
         if ($elementFound) {
-            $this->fail('Found menuitem ' . $extensionTPL .' before creating it on Incoming routes modify ' . PHP_EOL);
+            $this->fail('Found menuitem ' . $extensionTPL . ' before creating it on Incoming routes modify');
         }
 
-        // Extensions
+        // Check Extensions dropdown
         $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
         $this->clickButtonByHref('/admin-cabinet/extensions/modify');
 
         $this->changeTabOnCurrentPage('routing');
         $elementFound = $this->checkIfElementExistOnDropdownMenu('fwd_forwarding', $extensionTPL);
-
-        // Asserts
         if ($elementFound) {
-            $this->fail('Found menuitem ' . $extensionTPL .' before creating it on Extension routing tab ' . PHP_EOL);
-        }
-
-        $createExtension = new CreateExtensionsTest();
-        $createExtension->testCreateExtensions($this->additionProvider()['Nikita Telegrafov <246>'][0]);
-
-        // Routing
-        $this->clickSidebarMenuItemByHref('/admin-cabinet/incoming-routes/index/');
-        $this->clickButtonByHref('/admin-cabinet/incoming-routes/modify');
-
-        $elementFound = $this->checkIfElementExistOnDropdownMenu('extension', $extensionTPL);
-
-        // Asserts
-        if (!$elementFound) {
-            $this->fail('Not found menuitem ' . $extensionTPL .' after creating it on Incoming routes modify ' . PHP_EOL);
-        }
-
-        // Extensions
-        $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
-        $this->clickButtonByHref('/admin-cabinet/extensions/modify');
-
-        $this->changeTabOnCurrentPage('routing');
-        $elementFound = $this->checkIfElementExistOnDropdownMenu('fwd_forwarding', $extensionTPL);
-
-        // Asserts
-        if (!$elementFound) {
-            $this->fail('Not found menuitem ' . $extensionTPL .' after creating it on Extension routing tab ' . PHP_EOL);
+            $this->fail('Found menuitem ' . $extensionTPL . ' before creating it on Extension routing tab');
         }
     }
 
     /**
-     * Dataset provider for extension parameters.
+     * Test creating the extension
      *
-     * @return array
+     * @depends testDropdownsBeforeCreation
      */
-    public function additionProvider(): array
+    public function testCreateExtension(): void
     {
-        $params = [];
-        $params['Nikita Telegrafov <246>'] = [
-            [
-                'number'             => 246,
-                'email'              => 'ntele@miko.ru',
-                'username'           => 'Nikita Telegrafov',
-                'mobile'             => '79051454089',
-                'secret'             => '23542354wet',
-                'sip_enableRecording'=> false,
-                'sip_dtmfmode'       => 'auto_info',
-                'sip_networkfilterid'=> 'none',
-                'sip_transport'      => 'udp',
-                'sip_manualattributes'=> '',
-            ]
-        ];
-        return $params;
+        // Navigate to the extensions page
+        $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
+
+        // Fill search field and delete if exists
+        $this->fillDataTableSearchInput('extensions-table', 'global-search', $this->employeeData['username']);
+        $this->clickDeleteButtonOnRowWithText($this->employeeData['username']);
+
+        // Create new extension
+        $this->clickButtonByHref('/admin-cabinet/extensions/modify');
+        $this->fillEmployeeForm($this->employeeData);
+        $this->submitForm('extensions-form');
+
+        // Verify creation
+        $this->verifyExtensionCreation($this->employeeData);
+
+        self::annotate("Successfully created extension for: {$this->employeeData['username']}", 'success');
+    }
+
+    /**
+     * Test checking dropdown menus after extension creation
+     *
+     * @depends testCreateExtension
+     */
+    public function testDropdownsAfterCreation(): void
+    {
+        $extensionTPL = sprintf('%s <%s>', $this->employeeData['username'], $this->employeeData['number']);
+
+        // Check Incoming Routes dropdown
+        $this->clickSidebarMenuItemByHref('/admin-cabinet/incoming-routes/index/');
+        $this->clickButtonByHref('/admin-cabinet/incoming-routes/modify');
+
+        $elementFound = $this->checkIfElementExistOnDropdownMenu('extension', $extensionTPL);
+        if (!$elementFound) {
+            $this->fail('Not found menuitem ' . $extensionTPL . ' after creating it on Incoming routes modify');
+        }
+
+        // Check Extensions dropdown
+        $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
+        $this->clickButtonByHref('/admin-cabinet/extensions/modify');
+
+        $this->changeTabOnCurrentPage('routing');
+        $elementFound = $this->checkIfElementExistOnDropdownMenu('fwd_forwarding', $extensionTPL);
+        if (!$elementFound) {
+            $this->fail('Not found menuitem ' . $extensionTPL . ' after creating it on Extension routing tab');
+        }
+    }
+
+    /**
+     * Fill employee form
+     */
+    private function fillEmployeeForm(array $params): void
+    {
+        $this->changeInputField('user_username', $params['username']);
+        $this->changeInputField('number', $params['number']);
+        $this->changeInputField('mobile_number', $params['mobile']);
+        self::$driver->executeScript('$("#mobile_number").trigger("change")');
+        $this->changeInputField('user_email', $params['email']);
+        $this->changeInputField('sip_secret', $params['secret']);
+
+        // Expand advanced options
+        $this->openAccordionOnThePage();
+
+        // Set advanced options
+        $this->changeCheckBoxState('sip_enableRecording', $params['sip_enableRecording']);
+        $this->selectDropdownItem('sip_networkfilterid', $params['sip_networkfilterid']);
+        $this->selectDropdownItem('sip_transport', $params['sip_transport']);
+        $this->changeTextAreaValue('sip_manualattributes', $params['sip_manualattributes']);
+    }
+
+    /**
+     * Verify extension creation
+     */
+    private function verifyExtensionCreation(array $params): void
+    {
+        // Wait for extension creation
+        self::$driver->wait(10, 500)->until(
+            function () {
+                $xpath = "//input[@name = 'id']";
+                $input_ExtensionUniqueID = self::$driver->findElement(WebDriverBy::xpath($xpath));
+                return $input_ExtensionUniqueID->getAttribute('value') !== '';
+            }
+        );
+
+        // Navigate back and verify fields
+        $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
+        $this->fillDataTableSearchInput('extensions-table', 'global-search', $params['username']);
+        $this->clickModifyButtonOnRowWithText($params['username']);
+
+        // Verify basic fields
+        $this->assertInputFieldValueEqual('user_username', $params['username']);
+        $this->assertInputFieldValueEqual('number', $params['number']);
+        $this->assertInputFieldValueEqual('user_email', $params['email']);
+
+        // Verify routing tab
+        $this->changeTabOnCurrentPage('routing');
+        $this->assertInputFieldValueEqual('fwd_ringlength', '45');
+        $this->assertMenuItemSelected('fwd_forwardingonbusy', $params['mobile']);
+        $this->assertMenuItemSelected('fwd_forwarding', $params['mobile']);
+        $this->assertMenuItemSelected('fwd_forwardingonunavailable', $params['mobile']);
+
+        // Verify general tab and advanced options
+        $this->changeTabOnCurrentPage('general');
+        $this->assertInputFieldValueEqual('sip_secret', $params['secret']);
+
+        $this->openAccordionOnThePage();
+        $this->assertInputFieldValueEqual('mobile_dialstring', $params['mobile']);
+        $this->assertMenuItemSelected('sip_networkfilterid', $params['sip_networkfilterid']);
+        $this->assertMenuItemSelected('sip_transport', $params['sip_transport']);
+        $this->assertTextAreaValueIsEqual('sip_manualattributes', $params['sip_manualattributes']);
     }
 }

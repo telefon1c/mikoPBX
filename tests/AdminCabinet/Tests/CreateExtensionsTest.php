@@ -1,4 +1,5 @@
 <?php
+
 /*
  * MikoPBX - free phone system for small business
  * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
@@ -19,52 +20,100 @@
 
 namespace MikoPBX\Tests\AdminCabinet\Tests;
 
-
 use Facebook\WebDriver\WebDriverBy;
-use GuzzleHttp\Exception\GuzzleException;
 use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
+use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
 
-class CreateExtensionsTest extends MikoPBXTestsBase
+abstract class CreateExtensionsTest extends MikoPBXTestsBase
 {
+    use LoginTrait;
+
+    /**
+     * @var bool Flag to track if login has been performed
+     */
+    private static bool $isLoggedIn = false;
+
+    /**
+     * Set up before class
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        self::$isLoggedIn = false;
+    }
 
     /**
      * Set up before each test
      *
-     * @throws GuzzleException
      * @throws \Exception
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
-        $this->setSessionName("Test: Creating extensions");
+        $this->initializeCookieManager();
+        // Perform login if not already logged in
+        if (!self::$isLoggedIn) {
+            // Get login credentials from data provider
+            $loginData = $this->loginDataProvider();
+            $this->testLogin($loginData[0][0]);
+            self::$isLoggedIn = true;
+        }
+
+        // Verify we're still logged in
+        if (!$this->isUserLoggedIn()) {
+            self::$isLoggedIn = false;
+            $loginData = $this->loginDataProvider();
+            $this->testLogin($loginData[0][0]);
+            self::$isLoggedIn = true;
+        }
+
+        $params = $this->getEmployeeData();
+        $this->setSessionName("Test: Creating extension for {$params['username']}");
     }
 
     /**
-     * Test the creation of extensions.
-     *
-     * @depends testLogin
-     * @dataProvider additionProvider
-     *
-     * @param array $params The parameters for creating the extension.
-     *
-     * @throws \Facebook\WebDriver\Exception\NoSuchElementException
-     * @throws \Facebook\WebDriver\Exception\TimeoutException
+     * Employee data must be defined in child class
      */
-    public function testCreateExtensions(array $params): void
+    abstract protected function getEmployeeData(): array;
+
+    /**
+     * Test creating employee extension
+     */
+    public function testCreateExtension(): void
     {
-        // Navigate to the extensions page
-        $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
+        $params = $this->getEmployeeData();
+        self::annotate("Creating extension for user: {$params['username']}");
 
-        // Fill search field
-        $this->fillDataTableSearchInput('extensions-table', 'global-search', $params['username']);
+        try {
+            // Navigate to the extensions page
+            $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
 
-        // Delete any existing extension with the same username
-        $this->clickDeleteButtonOnRowWithText($params['username']);
+            // Fill search field and delete if exists
+            $this->fillDataTableSearchInput('extensions-table', 'global-search', $params['username']);
+            $this->clickDeleteButtonOnRowWithText($params['username']);
 
-        // Click the button to modify the extensions
-        $this->clickButtonByHref('/admin-cabinet/extensions/modify');
+            // Create new extension
+            $this->clickButtonByHref('/admin-cabinet/extensions/modify');
+            $this->fillEmployeeForm($params);
+            $this->submitForm('extensions-form');
 
-        // Set input field values for the extension
+            // Verify creation
+            $this->verifyExtensionCreation($params);
+
+            self::annotate("Successfully created extension for: {$params['username']}", 'success');
+        } catch (\Exception $e) {
+            self::annotate("Failed to create extension for: {$params['username']}", 'error');
+            throw $e;
+        }
+    }
+
+    /**
+     * Fill employee form with data
+     *
+     * @param array $params
+     */
+    private function fillEmployeeForm(array $params): void
+    {
         $this->changeInputField('user_username', $params['username']);
         $this->changeInputField('number', $params['number']);
         $this->changeInputField('mobile_number', $params['mobile']);
@@ -80,14 +129,15 @@ class CreateExtensionsTest extends MikoPBXTestsBase
         $this->selectDropdownItem('sip_networkfilterid', $params['sip_networkfilterid']);
         $this->selectDropdownItem('sip_transport', $params['sip_transport']);
         $this->changeTextAreaValue('sip_manualattributes', $params['sip_manualattributes']);
+    }
 
-        // Upload a file
-        $filePath = 'C:\Users\hello\Documents\images\person.jpg';
-        $this->changeFileField('file-select', $filePath);
-
-        // Submit the form
-        $this->submitForm('extensions-form');
-
+    /**
+     * Verify extension creation
+     *
+     * @param array $params
+     */
+    private function verifyExtensionCreation(array $params): void
+    {
         // Wait for extension creation
         self::$driver->wait(10, 500)->until(
             function () {
@@ -97,336 +147,39 @@ class CreateExtensionsTest extends MikoPBXTestsBase
             }
         );
 
-        // Assert extension creation
-        $xpath = "//input[@name = 'id']";
-        $input_ExtensionUniqueID = self::$driver->findElement(WebDriverBy::xpath($xpath));
-        $this->assertNotEmpty($input_ExtensionUniqueID->getAttribute('value'));
-
-        // Navigate back to the extensions page
+        // Navigate back to verify
         $this->clickSidebarMenuItemByHref('/admin-cabinet/extensions/index/');
-        // Fill search field
         $this->fillDataTableSearchInput('extensions-table', 'global-search', $params['username']);
         $this->clickModifyButtonOnRowWithText($params['username']);
 
-        // Assert input field values
+        // Verify fields
+        $this->verifyExtensionFields($params);
+    }
+
+    /**
+     * Verify extension fields
+     *
+     * @param array $params
+     */
+    private function verifyExtensionFields(array $params): void
+    {
         $this->assertInputFieldValueEqual('user_username', $params['username']);
         $this->assertInputFieldValueEqual('number', $params['number']);
         $this->assertInputFieldValueEqual('user_email', $params['email']);
 
-        // Switch to the 'routing' tab and assert values
         $this->changeTabOnCurrentPage('routing');
         $this->assertInputFieldValueEqual('fwd_ringlength', '45');
         $this->assertMenuItemSelected('fwd_forwardingonbusy', $params['mobile']);
         $this->assertMenuItemSelected('fwd_forwarding', $params['mobile']);
         $this->assertMenuItemSelected('fwd_forwardingonunavailable', $params['mobile']);
 
-        // Switch to the 'general' tab and assert values
         $this->changeTabOnCurrentPage('general');
         $this->assertInputFieldValueEqual('sip_secret', $params['secret']);
 
-        // Expand advanced options and assert values
         $this->openAccordionOnThePage();
         $this->assertInputFieldValueEqual('mobile_dialstring', $params['mobile']);
         $this->assertMenuItemSelected('sip_networkfilterid', $params['sip_networkfilterid']);
         $this->assertMenuItemSelected('sip_transport', $params['sip_transport']);
         $this->assertTextAreaValueIsEqual('sip_manualattributes', $params['sip_manualattributes']);
-    }
-
-
-    /**
-     * Dataset provider
-     * @return array
-     */
-    public function additionProvider(): array
-    {
-        $params = [];
-        $params['Eugeniy Makrchev <235>'] = [
-            [
-                'number'   => 235,
-                'email'    => 'emar@miko.ru',
-                'username' => 'Eugeniy Makrchev',
-                'mobile'   => '79031454088',
-                'secret'   => '23542354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'[endpoint]
-callerid=2546456<240>',
-
-            ]];
-        $params['Nikolay Beketov <229>'] = [
-            [
-                'number'   => 229,
-                'email'    => 'nuberk@miko.ru',
-                'username' => 'Nikolay Beketov',
-                'mobile'   => '79265244743',
-                'secret'   => 'GAb2o%2B_1Ys.25',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'inband',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-               ]];
-
-        $params['Svetlana Vlasova <223>'] = [
-            [
-                'number'   => 223,
-                'email'    => 'svlassvlas@miko.ru',
-                'username' => 'Svetlana Vlasova',
-                'mobile'   => '79269900372',
-                'secret'   => 'GAb2o%qwerqwer2354235.25',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'info',
-                'sip_networkfilterid'=>'4',
-                'sip_transport'=>'tcp',
-                'sip_manualattributes'=>'',
-              ]];
-        $params['Natalia Beketova <217>'] = [
-            [
-                'number'   => 217,
-                'email'    => 'nanabek@miko.ru',
-                'username' => 'Natalia Beketova',
-                'mobile'   => '79265244843',
-                'secret'   => 'GAb2o%2B_1Ys.25',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'tls',
-                'sip_manualattributes'=>'',
-
-                ]];
-        $params['Julia Efimova <206>'] = [
-            [
-                'number'   => 206,
-                'email'    => 'bubuh@miko.ru',
-                'username' => 'Julia Efimova',
-                'mobile'   => '79851417827',
-                'secret'   => '23542354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'rfc4733',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Alisher Usmanov <231>'] = [
-            [
-                'number'   => 231,
-                'email'    => 'alish@miko.ru',
-                'username' => 'Alisher Usmanov',
-                'mobile'   => '79265639989',
-                'secret'   => '23542354wet',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'tls',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Ivan Maltsev <236>'] = [
-            [
-                'number'   => 236,
-                'email'    => 'imalll@miko.ru',
-                'username' => 'Ivan Maltsev',
-                'mobile'   => '79265679989',
-                'secret'   => '23542354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-
-        $params['Alexandr Medvedev <214>'] = [
-            [
-                'number'   => 214,
-                'email'    => 'alex@miko.ru',
-                'username' => 'Alexandr Medvedev',
-                'mobile'   => '79853059396',
-                'secret'   => '235RTWETtre42354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Anna Mzhelskaya <212>'] = [
-            [
-                'number'   => 212,
-                'email'    => 'amzh@miko.ru',
-                'username' => 'Anna Mzhelskaya',
-                'mobile'   => '79852888742',
-                'secret'   => '235RTWETtre42354wet',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Viktor Mitin <210>'] = [
-            [
-                'number'   => 210,
-                'email'    => 'vmit@miko.ru',
-                'username' => 'Viktor Mitin',
-                'mobile'   => '79251323617',
-                'secret'   => '235RTWETtre42354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Anton Pasutin <228>'] = [
-            [
-                'number'   => 228,
-                'email'    => 'apas@miko.ru',
-                'username' => 'Anton Pasutin',
-                'mobile'   => '79262321957',
-                'secret'   => '235RTWETtre42354wet',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Kristina Perfileva <213>'] = [
-            [
-                'number'   => 213,
-                'email'    => 'kper@miko.ru',
-                'username' => 'Kristina Perfileva',
-                'mobile'   => '79256112214',
-                'secret'   => '235RTWETtre42354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Alexey Portnov <204>'] = [
-            [
-                'number'   => 204,
-                'email'    => 'apore@miko.ru',
-                'username' => 'Alexey Portnov',
-                'mobile'   => '79257184255',
-                'secret'   => '235RTWETtre42354wet',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Tatiana Portnova <233>'] = [
-            [
-                'number'   => 233,
-                'email'    => 'tpora@miko.ru',
-                'username' => 'Tatiana Portnova',
-                'mobile'   => '79606567153',
-                'secret'   => '235RTWETt543re42354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-
-            ]];
-        $params['Alexandra Pushina <254>'] = [
-            [
-                'number'   => 254,
-                'email'    => 'apushh@miko.ru',
-                'username' => 'Alexandra Pushina',
-                'mobile'   => '74952293043',
-                'secret'   => '235RTWETtre5442354wet',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Dmitri Fomichev <253>'] = [
-            [
-                'number'   => 253,
-                'email'    => 'dfom@miko.ru',
-                'username' => 'Dmitri Fomichev',
-                'mobile'   => '79152824438',
-                'secret'   => '235RTWETerwtre42354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'udp',
-                'sip_manualattributes'=>'',
-
-            ]];
-        $params['Daria Holodova <230>'] = [
-            [
-                'number'   => 230,
-                'email'    => 'dhol@miko.ru',
-                'username' => 'Daria Holodova',
-                'mobile'   => '79161737472',
-                'secret'   => '235RTWETtre42354wet',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'tls',
-                'sip_manualattributes'=>'',
-            ]];
-        $params['Ilia Tsvetkov <219>'] = [
-            [
-                'number'   => 219,
-                'email'    => 'icvetf@miko.ru',
-                'username' => 'Ilia Tsvetkov',
-                'mobile'   => '79998201098',
-                'secret'   => '235RT34WETtre42354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'tls',
-                'sip_manualattributes'=>'[endpoint]
-callerid=2546456<240>',
-            ]];
-        $params['Maxim Tsvetkov <240>'] = [
-            [
-                'number'   => 240,
-                'email'    => 'mcvetfd@miko.ru',
-                'username' => 'Maxim Tsvetkov',
-                'mobile'   => '79055651617',
-                'secret'   => '235RTWETttre42354wet',
-                'sip_enableRecording' => true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'tls',
-                'sip_manualattributes'=>'[endpoint]
-callerid=2546456<240>',
-            ]];
-        $params['Viktor Chentcov <251>'] = [
-            [
-                'number'   => 251,
-                'email'    => 'vchen@miko.ru',
-                'username' => 'Viktor Chentcov',
-                'mobile'   => '79265775288',
-                'secret'   => '235RTrWETtre42354wet',
-                'sip_enableRecording'=>false,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'tls',
-                'sip_manualattributes'=>'[endpoint]
-callerid=2546456<251>',
-
-            ]];
-        $params['Evgenia Chulkova <234>'] = [
-            [
-                'number'   => 234,
-                'email'    => 'esam@miko.ru',
-                'username' => 'Evgenia Chulkova',
-                'mobile'   => '79161237145',
-                'secret'   => '235RTWETftre42354wet',
-                'sip_enableRecording'=>true,
-                'sip_dtmfmode'=>'auto_info',
-                'sip_networkfilterid'=>'none',
-                'sip_transport'=>'tls',
-                'sip_manualattributes'=>'[endpoint]
-callerid=2546456<234>',
-
-            ]
-        ];
-        return $params;
     }
 }

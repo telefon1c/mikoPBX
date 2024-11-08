@@ -21,13 +21,13 @@
 namespace MikoPBX\Tests\AdminCabinet\Lib;
 
 use Exception;
-use RuntimeException;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Interactions\WebDriverActions;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverElement;
 use Facebook\WebDriver\WebDriverExpectedCondition;
-use MikoPBX\Tests\AdminCabinet\Tests\LoginTrait;
+use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
+use RuntimeException;
 
 /**
  * Enum for BrowserStack actions
@@ -126,19 +126,30 @@ class MikoPBXTestsBase extends BrowserStackTest
         );
     }
 
-
-
-
-
     /**
      * Wait for AJAX requests to complete
+     *
+     * @param int $timeout Timeout in seconds
+     * @return void
      */
-    protected function waitForAjax(): void
+    public function waitForAjax(int $timeout = 30): void
     {
-        self::annotate("Test action: Waiting for AJAX");
-        $this->executeWithRetry(function () {
-            return (bool)self::$driver->executeScript("return window.jQuery && jQuery.active == 0");
-        });
+        try {
+            self::$driver->wait($timeout, 500)->until(
+                function () {
+                    try {
+                        return self::$driver->executeScript(
+                            'return (typeof jQuery != "undefined") ? jQuery.active == 0 : true'
+                        );
+                    } catch (\Exception $e) {
+                        self::annotate("Error checking AJAX status: " . $e->getMessage());
+                        return true; // If we can't check, assume it's complete
+                    }
+                }
+            );
+        } catch (\Exception $e) {
+            self::annotate("Timeout waiting for AJAX: " . $e->getMessage());
+        }
     }
 
     /**

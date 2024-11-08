@@ -22,6 +22,7 @@ namespace MikoPBX\Tests\AdminCabinet\Tests;
 use Facebook\WebDriver\WebDriverBy;
 use GuzzleHttp\Exception\GuzzleException;
 use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
+use MikoPBX\Tests\AdminCabinet\Tests\Data\AudioFilesDataFactory;
 
 /**
  * Class to test the deletion of audio files in the admin cabinet.
@@ -51,11 +52,6 @@ class DeleteAudioFileTest extends MikoPBXTestsBase
      */
     public function testDeleteAudioFile(array $params): void
     {
-        if (!$params['for_delete']) {
-            $this->assertTrue(true);
-            return;
-        }
-
         // Click on the sound files in the sidebar menu
         $this->clickSidebarMenuItemByHref('/admin-cabinet/sound-files/index/');
         $this->clickModifyButtonOnRowWithText($params['name']);
@@ -91,8 +87,11 @@ class DeleteAudioFileTest extends MikoPBXTestsBase
      */
     public function additionProvider(): array
     {
-        // You can replace this with a proper dataset when needed.
-        $audioFiles = new CreateAudioFilesTest();
-        return $audioFiles->additionProvider();
+        $forDeleteFiles = AudioFilesDataFactory::getDeleteAudioFileKeys();
+        $data = [];
+        foreach ($forDeleteFiles as $file) {
+            $data[] = [AudioFilesDataFactory::getAudioFileData($file)];
+        }
+        return $data;
     }
 }

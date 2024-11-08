@@ -1,4 +1,5 @@
 <?php
+
 /*
  * MikoPBX - free phone system for small business
  * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
@@ -22,6 +23,7 @@ namespace MikoPBX\Tests\AdminCabinet\Tests;
 use Facebook\WebDriver\WebDriverBy;
 use GuzzleHttp\Exception\GuzzleException;
 use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
+use MikoPBX\Tests\AdminCabinet\Tests\Data\EmployeeDataFactory;
 
 /**
  * Class to test the deletion of an extension in the admin cabinet.
@@ -97,18 +99,8 @@ class DeleteExtensionTest extends MikoPBXTestsBase
     public function additionProvider(): array
     {
         $params = [];
-        $params['Alexandra Pushina'] = [
-            [
-                'username' => 'Alexandra Pushina',
-                'possibleToDelete' => true
-            ]
-        ];
-        $params['Smith James'] = [
-            [
-                'username' => 'Smith James',
-                'possibleToDelete' => false
-            ]
-        ];
+        $params['alexandra.pushina'] = EmployeeDataFactory::getEmployeeData('alexandra.pushina');
+        $params['smith.james'] = EmployeeDataFactory::getEmployeeData('smith.james');
         return $params;
     }
 }

@@ -5,6 +5,7 @@
         "build": "MikoPBXTest",
         "name": "local_test",
         "os": "Windows",
+        "parallel_sessions": 5,
         "resolution": "1680x1050",
         "acceptSslCerts": true,
         "acceptInsecureCerts": true,

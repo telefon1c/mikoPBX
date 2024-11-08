@@ -1,4 +1,5 @@
 <?php
+
 /*
  * MikoPBX - free phone system for small business
  * Copyright © 2017-2023 Alexey Portnov and Nikolay Beketov
@@ -26,7 +27,6 @@ use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
 
 class ChangeWeakPasswordTest extends MikoPBXTestsBase
 {
-
     /**
      * Set up before each test
      *
@@ -59,7 +59,8 @@ class ChangeWeakPasswordTest extends MikoPBXTestsBase
         );
 
         // Change SSH password
-        $this->changePassword('ssh', 'SSHPassword', $params['password']);;
+        $this->changePassword('ssh', 'SSHPassword', $params['password']);
+        ;
         // Change WebAdmin password
         $this->changePassword('passwords', 'WebAdminPassword', $params['password']);
 
@@ -80,7 +81,8 @@ class ChangeWeakPasswordTest extends MikoPBXTestsBase
     }
 
     // Change password field
-    function changePassword(string $path, string $passwordFieldName, string $password) {
+    function changePassword(string $path, string $passwordFieldName, string $password)
+    {
         self::$driver->get("{$GLOBALS['SERVER_PBX']}/admin-cabinet/general-settings/modify/#/{$path}");
         $this->changeInputField($passwordFieldName, $password);
         $this->changeInputField($passwordFieldName . 'Repeat', $password);
@@ -106,8 +108,3 @@ class ChangeWeakPasswordTest extends MikoPBXTestsBase
         return $params;
     }
 }
-
-
-
-
-

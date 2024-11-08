@@ -100,6 +100,19 @@
         }
     },
     "scripts": {
-        "phpcs": "phpcs --standard=PSR12"
+        "phpcs": "phpcs --standard=PSR12",
+        "generate-extensions-tests": "php tests/AdminCabinet/Scripts/GenerateExtensionTests.php",
+        "generate-ivrmenu-tests": "php tests/AdminCabinet/Scripts/GenerateIVRMenuTests.php",
+        "generate-sip-providers-tests": "php tests/AdminCabinet/Scripts/GenerateSIPProviderTests.php",
+        "generate-iax-providers-tests": "php tests/AdminCabinet/Scripts/GenerateIAXProviderTests.php",
+        "generate-call-queues-tests": "php tests/AdminCabinet/Scripts/GenerateCallQueueTests.php",
+        "generate-ami-users-tests": "php tests/AdminCabinet/Scripts/GenerateAMIUsersTests.php",
+        "generate-modules-tests": "php tests/AdminCabinet/Scripts/GenerateModuleTests.php",
+        "generate-out-off-work-tests": "php tests/AdminCabinet/Scripts/GenerateOutOfWorkPeriodTests.php",
+        "generate-firewall-rules-tests": "php tests/AdminCabinet/Scripts/GenerateFirewallRulesTests.php",
+        "generate-moh-files-tests": "php tests/AdminCabinet/Scripts/GenerateMOHFileTests.php",
+        "generate-audio-files-tests": "php tests/AdminCabinet/Scripts/GenerateAudioFileTests.php",
+        "generate-incoming-call-rules": "php tests/AdminCabinet/Scripts/GenerateIncomingCallRuleTests.php",
+        "generate-outgoing-call-rules": "php tests/AdminCabinet/Scripts/GenerateOutgoingCallRuleTests.php"
     }
 }
