@@ -1266,6 +1266,11 @@ function event_hangup_chan()
     data['agi_channel'] = get_variable("CHANNEL");
     data['OLD_LINKEDID']= get_variable("OLD_LINKEDID");
     data['UNIQUEID']  	= get_variable("pt1c_UNIQUEID");
+    if( data['UNIQUEID'] == '')then
+        -- Possible this is a call forwarding
+        data['UNIQUEID']  	= get_variable("transfer_UNIQUEID");
+    end
+
     data['VMSTATUS']  	= get_variable("VMSTATUS");
 
     -- Retrieve the verbose call ID and append the original call ID if available
