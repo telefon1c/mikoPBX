@@ -73,7 +73,7 @@ class SIPConf extends AsteriskConfigClass
      *
      * @var int
      */
-    protected int $limitSelectPeers = 3;
+    protected int $limitSelectPeers = 150;
 
     /**
      * Providers data.

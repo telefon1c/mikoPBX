@@ -66,7 +66,7 @@ class AclConf extends AsteriskConfigClass
     private function getPeers(): array
     {
         $data    = [];
-        $db_data = Sip::find("type = 'peer' AND ( disabled <> '1')");
+        $db_data = Sip::find(["type = 'peer' AND ( disabled <> '1')", 'columns' => 'networkfilterid']);
         foreach ($db_data as $sip_peer) {
             $arr_data       = $sip_peer->toArray();
             $network_filter = null;
