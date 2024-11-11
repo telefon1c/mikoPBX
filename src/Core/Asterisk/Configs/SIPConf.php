@@ -37,7 +37,6 @@ use MikoPBX\Core\Asterisk\AstDB;
 use MikoPBX\Core\Asterisk\Configs\Generators\Extensions\IncomingContexts;
 use MikoPBX\Core\System\{ Network, Processes, SystemMessages, Util};
 use MikoPBX\Core\Utilities\SubnetCalculator;
-use Phalcon\Di\Di;
 use Throwable;
 
 /**
@@ -63,11 +62,18 @@ class SIPConf extends AsteriskConfigClass
     private const string TOPOLOGY_HASH_FILE = '/topology_hash';
 
     /**
-     * Peers data.
+     * Peers data offset.
      *
-     * @var mixed
+     * @var int
      */
-    protected $data_peers;
+    protected int $offsetPeers = 0;
+
+    /**
+     * Peers data offset.
+     *
+     * @var int
+     */
+    protected int $limitSelectPeers = 3;
 
     /**
      * Providers data.
@@ -127,12 +133,7 @@ class SIPConf extends AsteriskConfigClass
      */
     public function needAsteriskRestart(): bool
     {
-        $di = Di::getDefault();
-        if ($di === null) {
-            return false;
-        }
         [$topology, $extIpAddress, $externalHostName, $subnets] = $this->getTopologyData();
-
         $externalSipPort    = $this->generalSettings[PbxSettings::EXTERNAL_SIP_PORT];
         $externalTlsPort    = $this->generalSettings[PbxSettings::EXTERNAL_TLS_PORT];
         $sipPort            = $this->generalSettings[PbxSettings::SIP_PORT];
@@ -142,7 +143,7 @@ class SIPConf extends AsteriskConfigClass
         $now_hash           = md5($timeZone.$topology . $externalHostName . $extIpAddress . $sipPort . $externalSipPort . $tlsPort . $externalTlsPort . implode('', $subnets));
 
         $old_hash        = '';
-        $varEtcDir       = $di->getShared('config')->path('core.varEtcDir');
+        $varEtcDir       = $this->di->getShared('config')->path('core.varEtcDir');
         if (file_exists($varEtcDir . self::TOPOLOGY_HASH_FILE)) {
             $old_hash = file_get_contents($varEtcDir . self::TOPOLOGY_HASH_FILE);
         }
@@ -212,7 +213,7 @@ class SIPConf extends AsteriskConfigClass
      */
     public function extensionGenContexts(): string
     {
-        if ($this->data_peers === null) {
+        if ($this->data_providers === null) {
             $this->getSettings();
         }
         // Generate internal number plan.
@@ -241,21 +242,24 @@ class SIPConf extends AsteriskConfigClass
         $conf .= PHP_EOL . '[monitor-internal]' . PHP_EOL;
         $confExceptions = '';
 
-        // Process peers and their numbers.
-        foreach ($this->data_peers as $peer) {
-            $numbers = $usersNumbers[$peer['user_id']] ?? [];
-            foreach ($numbers as $num) {
-                $num = substr($num, -9);
-                if (!str_contains($conf, " $num,")) {
-                    $conf  .= "exten => $num,1,NoOp(-)" . PHP_EOL;
-                }
-                if ($peer['enableRecording'] !== true && !str_contains($confExceptions, " $num,")) {
-                    $confExceptions .= "exten => $num,1,NoOp(-)" . PHP_EOL;
+        do {
+            $data_peers = $this->getPeers();
+            foreach ($data_peers as $peer) {
+                $numbers = $usersNumbers[$peer['user_id']] ?? [];
+                foreach ($numbers as $num) {
+                    $num = substr($num, -9);
+                    if (!str_contains($conf, " $num,")) {
+                        $conf  .= "exten => $num,1,NoOp(-)" . PHP_EOL;
+                    }
+                    if ($peer['enableRecording'] !== true && !str_contains($confExceptions, " $num,")) {
+                        $confExceptions .= "exten => $num,1,NoOp(-)" . PHP_EOL;
+                    }
                 }
             }
-        }
+        } while (!empty($data_peers));
+
         $conf .= PHP_EOL . '[monitor-exceptions]' . PHP_EOL .
-            $confExceptions . PHP_EOL . PHP_EOL;
+                $confExceptions . PHP_EOL . PHP_EOL;
         return $conf;
     }
 
@@ -270,7 +274,6 @@ class SIPConf extends AsteriskConfigClass
     {
         $this->contexts_data = [];
         // Retrieve peers, providers, out routes, technology, and SIP hosts data.
-        $this->data_peers        = $this->getPeers();
         $this->data_providers    = $this->getProviders();
         $this->data_rout         = $this->getOutRoutes();
         $this->technology        = self::getTechnology();
@@ -292,33 +295,40 @@ class SIPConf extends AsteriskConfigClass
         /** @var Users $user */
         /** @var ExtensionForwardingRights $extensionForwarding */
         $data    = [];
-        $db_data = Sip::find("type = 'peer' AND ( disabled <> '1')");
 
+        $filter = [
+            "type = 'peer' AND ( disabled <> '1')",
+            "offset" => $this->offsetPeers,
+            'limit'  => $this->limitSelectPeers
+        ];
+        $db_data = Sip::find($filter)->toArray();
+        $this->offsetPeers += $this->limitSelectPeers;
+        if(count($db_data)===0){
+            $this->offsetPeers = 0;
+            return $data;
+        }
         // Process each SIP peer.
-        foreach ($db_data as $sip_peer) {
-            $arr_data       = $sip_peer->toArray();
+        foreach ($db_data as $arr_data) {
             $network_filter = null;
-
             // Retrieve associated network filter if available.
-            if (! empty($sip_peer->networkfilterid)) {
-                $network_filter = NetworkFilters::findFirst($sip_peer->networkfilterid);
+            if (!empty($arr_data['networkfilterid'])) {
+                $network_filter = NetworkFilters::findFirst($arr_data['networkfilterid']);
             }
-
             // Assign permit and deny values based on network filter.
-            $arr_data['permit'] = ($network_filter === null) ? '' : $network_filter->permit;
-            $arr_data['deny']   = ($network_filter === null) ? '' : $network_filter->deny;
+            $arr_data['permit'] = ($network_filter === null)?'': $network_filter->permit;
+            $arr_data['deny']   = ($network_filter === null)?'': $network_filter->deny;
 
             $arr_data['transport'] = trim($arr_data['transport'] ?? '');
             // Retrieve used codecs.
             $arr_data['codecs'] = $this->getCodecs();
-            $arr_data['enableRecording'] = $sip_peer->enableRecording !== '0';
+            $arr_data['enableRecording'] = $arr_data['enableRecording'] !== '0';
 
             // Retrieve employee name.
-            $extension = Extensions::findFirst("number = '$sip_peer->extension'");
+            $extension = Extensions::findFirst("number = '$arr_data[extension]'");
             if (null === $extension) {
                 $arr_data['publicaccess'] = false;
                 $arr_data['language']     = '';
-                $arr_data['calleridname'] = $sip_peer->extension;
+                $arr_data['calleridname'] = $arr_data['extension'];
             } else {
                 $arr_data['publicaccess'] = $extension->public_access;
                 $arr_data['calleridname'] = $extension->callerid;
@@ -328,9 +338,8 @@ class SIPConf extends AsteriskConfigClass
                     $arr_data['user_id']  = $user->id;
                 }
             }
-
             // Retrieve extension forwarding rights.
-            $extensionForwarding = ExtensionForwardingRights::findFirst("extension = '$sip_peer->extension'");
+            $extensionForwarding = ExtensionForwardingRights::findFirst("extension = '$arr_data[extension]'");
             if (null === $extensionForwarding) {
                 $arr_data['ringlength']              = '';
                 $arr_data['forwarding']              = '';
@@ -423,9 +432,6 @@ class SIPConf extends AsteriskConfigClass
      */
     private function getOutRoutes(): array
     {
-        if ($this->data_peers === null) {
-            $this->getSettings();
-        }
         /** @var OutgoingRoutingTable $rout */
         /** @var OutgoingRoutingTable $routs */
         /** @var Sip $db_data */
@@ -495,17 +501,18 @@ class SIPConf extends AsteriskConfigClass
      */
     public function extensionGenHints(): string
     {
-        if ($this->data_peers === null) {
-            $this->getSettings();
-        }
         $conf = '';
-        foreach ($this->data_peers as $peer) {
-            $hint = "$this->technology/{$peer['extension']}";
-            if ($this->generalSettings[PbxSettings::USE_WEB_RTC] === '1') {
-                $hint .= "&$this->technology/{$peer['extension']}-WS";
+        do {
+            $data_peers = $this->getPeers();
+            foreach ($data_peers as $peer) {
+                $hint = "$this->technology/$peer[extension]";
+                if ($this->generalSettings[PbxSettings::USE_WEB_RTC] === '1') {
+                    $hint .= "&$this->technology/$peer[extension]-WS";
+                }
+                $conf .= "exten => $peer[extension],hint,$hint&Custom:$peer[extension] \n";
             }
-            $conf .= "exten => {$peer['extension']},hint,$hint&Custom:{$peer['extension']} \n";
-        }
+        } while (!empty($data_peers));
+
         return $conf;
     }
 
@@ -518,15 +525,14 @@ class SIPConf extends AsteriskConfigClass
      */
     public function extensionGenInternal(): string
     {
-        if ($this->data_peers === null) {
-            $this->getSettings();
-        }
         $conf = '';
-        foreach ($this->data_peers as $peer) {
-            $conf .= "exten => {$peer['extension']},1,Goto(internal-users,{$peer['extension']},1) \n";
-        }
+        do {
+            $data_peers = $this->getPeers();
+            foreach ($data_peers as $peer) {
+                $conf .= "exten => $peer[extension],1,Goto(internal-users,$peer[extension],1) \n";
+            }
+        } while (!empty($data_peers));
         $conf .= "\n";
-
         return $conf;
     }
 
@@ -539,16 +545,15 @@ class SIPConf extends AsteriskConfigClass
      */
     public function extensionGenInternalTransfer(): string
     {
-        if ($this->data_peers === null) {
-            $this->getSettings();
-        }
         $conf = '';
-        foreach ($this->data_peers as $peer) {
-            $conf .= "exten => {$peer['extension']},1,Set(__ISTRANSFER=transfer_) \n";
-            $conf .= "	same => n,Goto(internal-users,{$peer['extension']},1) \n";
-        }
+        do {
+            $data_peers = $this->getPeers();
+            foreach ($data_peers as $peer) {
+                $conf .= "exten => $peer[extension],1,Set(__ISTRANSFER=transfer_) \n";
+                $conf .= "	same => n,Goto(internal-users,$peer[extension],1) \n";
+            }
+        } while (!empty($data_peers));
         $conf .= "\n";
-
         return $conf;
     }
 
@@ -592,19 +597,20 @@ class SIPConf extends AsteriskConfigClass
      */
     public function updateAsteriskDatabase(): bool
     {
-        if ($this->data_peers === null) {
-            $this->getSettings();
-        }
         $warError = false;
         $db = new AstDB();
-        foreach ($this->data_peers as $peer) {
-            // Update Asterisk database with routing information.
-            $ringLength = ((string)$peer['ringlength'] === '0') ? '' : trim($peer['ringlength']??'');
-            $warError |= !$db->databasePut('FW_TIME', $peer['extension'], $ringLength);
-            $warError |= !$db->databasePut('FW', $peer['extension'], trim($peer['forwarding']??''));
-            $warError |= !$db->databasePut('FW_BUSY', $peer['extension'], trim($peer['forwardingonbusy']??''));
-            $warError |= !$db->databasePut('FW_UNAV', $peer['extension'], trim($peer['forwardingonunavailable']??''));
-        }
+
+        do {
+            $data_peers = $this->getPeers();
+            foreach ($data_peers as $peer) {
+                // Update Asterisk database with routing information.
+                $ringLength = ((string)$peer['ringlength'] === '0') ? '' : trim($peer['ringlength']??'');
+                $warError |= !$db->databasePut('FW_TIME', $peer['extension'], $ringLength);
+                $warError |= !$db->databasePut('FW', $peer['extension'], trim($peer['forwarding']??''));
+                $warError |= !$db->databasePut('FW_BUSY', $peer['extension'], trim($peer['forwardingonbusy']??''));
+                $warError |= !$db->databasePut('FW_UNAV', $peer['extension'], trim($peer['forwardingonunavailable']??''));
+            }
+        } while (!empty($data_peers));
 
         return !$warError;
     }
@@ -1151,21 +1157,18 @@ class SIPConf extends AsteriskConfigClass
      */
     public function generatePeersPj(): string
     {
-        if ($this->data_peers === null) {
-            $this->getSettings();
-        }
         $lang = $this->generalSettings[PbxSettings::PBX_LANGUAGE];
         $conf = '';
-
-        foreach ($this->data_peers as $peer) {
-            $manual_attributes = Util::parseIniSettings($peer['manualattributes'] ?? '');
-            $conf              .= $this->generatePeerAuth($peer, $manual_attributes);
-            $conf              .= $this->generatePeerAor($peer, $manual_attributes);
-            $conf              .= $this->generatePeerEndpoint($lang, $peer, $manual_attributes);
-        }
-
+        do {
+            $data_peers = $this->getPeers();
+            foreach ($data_peers as $peer) {
+                $manual_attributes = Util::parseIniSettings($peer['manualattributes'] ?? '');
+                $conf              .= $this->generatePeerAuth($peer, $manual_attributes);
+                $conf              .= $this->generatePeerAor($peer, $manual_attributes);
+                $conf              .= $this->generatePeerEndpoint($lang, $peer, $manual_attributes);
+            }
+        } while (!empty($data_peers));
         $conf .= $this->hookModulesMethod(AsteriskConfigInterface::GENERATE_PEERS_PJ);
-
         return $conf;
     }
 
