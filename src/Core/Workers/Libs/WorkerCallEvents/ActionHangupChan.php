@@ -218,7 +218,7 @@ class ActionHangupChan
         $data['start'] = date("Y-m-d H:i:s.v", $time);
         $data['endtime'] = $data['end'];
 
-        InsertDataToDB::execute($data);
+        InsertDataToDB::execute($data, $data['agi_channel']);
     }
 
     /**

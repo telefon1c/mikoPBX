@@ -36,9 +36,10 @@ class InsertDataToDB
      * Execute the insertion of data into the database.
      *
      * @param array $data The data to be inserted.
+     * @param string $channel Channel data, additional filter.
      * @return void
      */
-    public static function execute($data): void
+    public static function execute($data, string $channel = ''): void
     {
         if (empty($data['UNIQUEID'])) {
             SystemMessages::sysLogMsg(__FUNCTION__, 'UNIQUEID is empty ' . json_encode($data), LOG_DEBUG);
@@ -46,16 +47,19 @@ class InsertDataToDB
         }
 
         $is_new = false;
+        $filter = [
+            "UNIQUEID=:id: AND linkedid=:linkedid:",
+            'bind' => [
+                'id' => $data['UNIQUEID'],
+                'linkedid' => $data['linkedid']
+            ],
+        ];
+        if($channel !== ''){
+            $filter[0].=  " AND (src_chan = :chan: OR dst_chan = :chan: )";
+            $filter['bind']['chan'] = $channel;
+        }
         /** @var CallDetailRecordsTmp $m_data */
-        $m_data = CallDetailRecordsTmp::findFirst(
-            [
-                "UNIQUEID=:id: AND linkedid=:linkedid:",
-                'bind' => [
-                    'id' => $data['UNIQUEID'],
-                    'linkedid' => $data['linkedid']
-                ],
-            ]
-        );
+        $m_data = CallDetailRecordsTmp::findFirst($filter);
         if ($m_data === null) {
             // Create a new call record.
             $m_data = new CallDetailRecordsTmp();

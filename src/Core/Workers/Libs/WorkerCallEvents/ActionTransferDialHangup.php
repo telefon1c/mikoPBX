@@ -128,7 +128,7 @@ class ActionTransferDialHangup
             'bind' => [
                 'linkedid' => $data['linkedid'],
                 'src_chan' => $data['TRANSFERERNAME'],
-                'dst_chan' => $data['dst_chan'],
+                'dst_chan' => empty($data['dst_chan'])?$data['agi_channel']:$data['dst_chan'],
             ],
         ];
         /** @var CallDetailRecordsTmp $m_data */
