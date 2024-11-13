@@ -37,7 +37,7 @@ class AclConf extends AsteriskConfigClass
     public int $priority = 1000;
 
     protected string $description = 'acl.conf';
-    protected array $data_peers;
+    protected array $dataPeers;
 
     /**
      * Returns the models that this class depends on.
@@ -55,7 +55,7 @@ class AclConf extends AsteriskConfigClass
     public function getSettings(): void
     {
         // Settings for the current class.
-        $this->data_peers = $this->getPeers();
+        $this->dataPeers = $this->getPeers();
     }
 
     /**
@@ -66,7 +66,7 @@ class AclConf extends AsteriskConfigClass
     private function getPeers(): array
     {
         $data    = [];
-        $db_data = Sip::find(["type = 'peer' AND ( disabled <> '1')", 'columns' => 'networkfilterid']);
+        $db_data = Sip::find(["type = 'peer' AND ( disabled <> '1')", 'columns' => 'networkfilterid,manualattributes,extension']);
         foreach ($db_data as $sip_peer) {
             $arr_data       = $sip_peer->toArray();
             $network_filter = null;
@@ -78,7 +78,6 @@ class AclConf extends AsteriskConfigClass
 
             $data[] = $arr_data;
         }
-
         return $data;
     }
 
@@ -88,20 +87,17 @@ class AclConf extends AsteriskConfigClass
     protected function generateConfigProtected(): void
     {
         $conf_acl = '';
-        foreach ($this->data_peers as $peer) {
+        foreach ($this->dataPeers as $peer) {
             $manual_attributes = Util::parseIniSettings($peer['manualattributes'] ?? '');
-
             $deny   = (trim($peer['deny']) === '') ? '0.0.0.0/0.0.0.0' : $peer['deny'];
             $permit = (trim($peer['permit']) === '') ? '0.0.0.0/0.0.0.0' : $peer['permit'];
-
             $options  = [
                 'deny'   => $deny,
                 'permit' => $permit,
             ];
-            $conf_acl .= "[acl_{$peer['extension']}] \n";
+            $conf_acl .= "[acl_$peer[extension]]".PHP_EOL;
             $conf_acl .= Util::overrideConfigurationArray($options, $manual_attributes, 'acl');
         }
-
         Util::fileWriteContent($this->config->path('asterisk.astetcdir') . '/acl.conf', $conf_acl);
     }
 }
