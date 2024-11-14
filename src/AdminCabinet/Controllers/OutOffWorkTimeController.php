@@ -209,7 +209,7 @@ class OutOffWorkTimeController extends BaseController
         unset($data);
 
         // Get the list of allowed routing rules
-        $rules        = IncomingRoutingTable::find(['order' => 'priority', 'conditions' => 'id>1']);
+        $rules        = IncomingRoutingTable::find(['order' => 'provider,number,priority', 'conditions' => 'id>1']);
         $routingTable = [];
         foreach ($rules as $rule) {
             $provider = $rule->Providers;
