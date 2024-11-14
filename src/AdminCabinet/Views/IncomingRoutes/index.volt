@@ -20,27 +20,27 @@
             <td class="{% if rule['disabled']==1 %}disabled{% endif %}">
 
                 {% if rule['number'] is empty AND rule['provider'] is empty %}
-                    {{ t._('ir_RuleDescriptionWithoutNumberAndWithoutProvider',
+                    {{ t._('ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2',
                         [
                             'timeout':rule['timeout'],
                             'callerid':rule['callerid']
                         ]) }}
                 {% elseif rule['number'] is empty %}
-                    {{ t._('ir_RuleDescriptionWithoutNumber',
+                    {{ t._('ir_RuleDescriptionWithoutNumber_v2',
                         [
                             'timeout':rule['timeout'],
                             'provider':rule['provider'],
                             'callerid':rule['callerid']
                         ]) }}
                 {% elseif rule['provider'] is empty %}
-                    {{ t._('ir_RuleDescriptionWithoutProvider',
+                    {{ t._('ir_RuleDescriptionWithoutProvider_v2',
                         [
                             'timeout':rule['timeout'],
                             'callerid':rule['callerid'],
                             'number':rule['number']
                         ]) }}
                 {% else %}
-                    {{ t._('ir_RuleDescriptionWithNumberAndWithProvider',
+                    {{ t._('ir_RuleDescriptionWithNumberAndWithProvider_v2',
                         [
                             'timeout':rule['timeout'],
                             'provider':rule['provider'],
