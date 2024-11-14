@@ -112,8 +112,10 @@ class ProcessPBXSettings extends Injectable
         $tables[] = [
             'keys' => [
                 PbxSettings::AMI_PORT,
+                PbxSettings::AMI_ENABLED,
                 PbxSettings::AJAM_PORT,
                 PbxSettings::AJAM_PORT_TLS,
+                PbxSettings::AJAM_ENABLED,
             ],
             'actions' => [
                 ReloadManagerAction::class,

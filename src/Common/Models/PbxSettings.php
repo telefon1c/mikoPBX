@@ -237,6 +237,17 @@ class PbxSettings extends ModelsBase
         $result = $record->save();
         if (!$result) {
             $messages[] = $record->getMessages();
+        }else{
+            // Clean the cache in redis
+            try {
+                $redis = Di::GetDefault()->getShared(ManagedCacheProvider::SERVICE_NAME);
+                foreach (['getValueByKey', 'getAllPbxSettings'] as $index){
+                    $cacheKey = ModelsBase::makeCacheKey(PbxSettings::class, $index);
+                    $redis->set($cacheKey, '', 1);
+                }
+            } catch (\Throwable $e) {
+                CriticalErrorsHandler::handleException($e);
+            }
         }
         return $result;
     }

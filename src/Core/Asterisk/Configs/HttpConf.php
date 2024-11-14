@@ -43,31 +43,32 @@ class HttpConf extends AsteriskConfigClass
      */
     protected function generateConfigProtected(): void
     {
-        $enabled = ($this->generalSettings[PbxSettings::AJAM_ENABLED] === '1') ? 'yes' : 'no';
-        $conf    = "[general]\n" .
-            "enabled=$enabled\n" .
-            "bindaddr=0.0.0.0\n" .
-            "bindport={$this->generalSettings[PbxSettings::AJAM_PORT]}\n" .
-            "prefix=asterisk\n" .
-            "enablestatic=yes\n\n";
-
+        $isEnable = intval($this->generalSettings[PbxSettings::AJAM_ENABLED]) === 1;
+        $enabled = ($isEnable) ? 'yes' : 'no';
+        $conf    = "[general]".PHP_EOL .
+            "enabled=$enabled".PHP_EOL .
+            "bindaddr=0.0.0.0".PHP_EOL .
+            "bindport={$this->generalSettings[PbxSettings::AJAM_PORT]}".PHP_EOL .
+            "prefix=asterisk".PHP_EOL .
+            "enablestatic=yes".PHP_EOL.PHP_EOL;
         if ( ! empty($this->generalSettings[PbxSettings::AJAM_PORT_TLS])) {
             $keys_dir = '/etc/asterisk/keys';
             Util::mwMkdir($keys_dir);
-            $WEBHTTPSPublicKey  = $this->generalSettings[PbxSettings::WEB_HTTPS_PUBLIC_KEY];
-            $WEBHTTPSPrivateKey = $this->generalSettings[PbxSettings::WEB_HTTPS_PRIVATE_KEY];
+            $publicKey  = $this->generalSettings[PbxSettings::WEB_HTTPS_PUBLIC_KEY];
+            $privateKey = $this->generalSettings[PbxSettings::WEB_HTTPS_PRIVATE_KEY];
 
-            if ( ! empty($WEBHTTPSPublicKey) && ! empty($WEBHTTPSPrivateKey)) {
-                $s_data = "$WEBHTTPSPublicKey\n$WEBHTTPSPrivateKey";
+            if ( ! empty($publicKey) && ! empty($privateKey)) {
+                $s_data = "".$publicKey.PHP_EOL.
+                             $privateKey;
             } else {
                 // Generate SSL certificate
                 $data   = Util::generateSslCert();
                 $s_data = implode("\n", $data);
             }
-            $conf .= "tlsenable=$enabled\n" .
-                "tlsbindaddr=0.0.0.0:{$this->generalSettings[PbxSettings::AJAM_PORT_TLS]}\n" .
-                "tlscertfile=$keys_dir/ajam.pem\n" .
-                "tlsprivatekey=$keys_dir/ajam.pem\n";
+            $conf .= "tlsenable=$enabled" . PHP_EOL.
+                "tlsbindaddr=0.0.0.0:{$this->generalSettings[PbxSettings::AJAM_PORT_TLS]}".PHP_EOL.
+                "tlscertfile=$keys_dir/ajam.pem".PHP_EOL.
+                "tlsprivatekey=$keys_dir/ajam.pem".PHP_EOL;
             Util::fileWriteContent("$keys_dir/ajam.pem", $s_data);
         }
 
