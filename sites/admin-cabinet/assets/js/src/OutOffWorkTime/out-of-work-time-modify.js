@@ -288,6 +288,9 @@ const outOfWorkTimeRecord = {
                 let filter = '#inbound-rules-table .ui.checkbox[data-context-id=' + $(this).parent().attr('data-context-id') + ']';
                 if(did !== '' && newState === 'checked'){
                     filter = filter + '.ui.checkbox[data-did='+did+']';
+                }else if(did !== '' && newState === 'unchecked'){
+                    $(filter + '.ui.checkbox[data-did="'+did+'"]').checkbox('set '+newState);
+                    filter = filter + '.ui.checkbox[data-did=""]';
                 }else if(did === '' && newState === 'unchecked'){
                     filter = filter + '.ui.checkbox[data-did=""]';
                 }
