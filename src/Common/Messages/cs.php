@@ -1237,4 +1237,8 @@ Kupón lze aktivovat jednou, poté se uplatní.',
     'ex_SearchByID' => 'Vyhledávání podle interního ID zaměstnance',
     'ex_SearchByCustomPhrase' => 'Fulltextové vyhledávání',
     'sd_ToolTipFullscreen' => 'Rozbalte na celou obrazovku',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Hovor na <b>jakékoli číslo</b> přes&nbsp&nbsp&nbsp<b>%provider%</b> bude přesměrován na&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Hovor bez připojení k poskytovateli na číslo <b>%number%</b> bude přesměrován na&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Hovor bez odkazu na poskytovatele na <b>jakékoli číslo</b> bude přesměrován na&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Hovor na číslo <b>%number%</b> přes&nbsp&nbsp&nbsp<b>%provider%</b> bude přesměrován na&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

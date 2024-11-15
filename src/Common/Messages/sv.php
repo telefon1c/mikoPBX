@@ -1237,4 +1237,8 @@ Du kan få en ny nyckel automatiskt genom att fylla i registreringsformuläret.<
     'mo_ParkingExtension' => 'Parkeringsplats %number%',
     'ex_SearchByMobile' => 'Sök på mobilnummer',
     'sd_ToolTipFullscreen' => 'Expandera till helskärm',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Ett samtal till numret <b>%number%</b> via&nbsp&nbsp&nbsp<b>%provider%</b> kommer att dirigeras till&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Ett samtal till <b>valfritt nummer</b> via&nbsp&nbsp&nbsp<b>%provider%</b> kommer att dirigeras till&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Ett samtal utan anslutning till en leverantör till numret <b>%number%</b> kommer att dirigeras till&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Ett samtal utan hänvisning till en leverantör till <b>valfritt nummer</b> kommer att dirigeras till&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

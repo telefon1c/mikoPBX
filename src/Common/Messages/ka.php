@@ -1237,4 +1237,8 @@ return [
     'ex_SearchByCustomPhrase' => 'სრული ტექსტის ძიება',
     'mo_ParkingExtension' => 'პარკირების ადგილი %number%',
     'sd_ToolTipFullscreen' => 'გაფართოება სრულ ეკრანზე',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'ზარი პროვაიდერთან მითითების გარეშე <b>ნებისმიერ ნომერზე</b> მიმართული იქნება &nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'ზარი ნომერზე <b>%number%</b>&nbsp&nbsp&nbsp<b>%provider%</b>-ით მიმართული იქნება&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'ზარი <b>ნებისმიერ ნომერზე</b>&nbsp&nbsp&nbsp<b>%provider%</b>-ით მიმართული იქნება&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'ზარი პროვაიდერთან დაკავშირების გარეშე ნომერზე <b>%number%</b> მიმართული იქნება&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

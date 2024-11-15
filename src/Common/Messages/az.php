@@ -1270,4 +1270,8 @@ Siz qeydiyyat formasını doldurmaqla avtomatik olaraq yeni açar əldə edə bi
     'ex_SearchByID' => 'Daxili işçi ID-si ilə axtarın',
     'ex_SearchByCustomPhrase' => 'Tam mətn axtarışı',
     'sd_ToolTipFullscreen' => 'Tam ekrana qədər genişləndirin',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => '<b>%number%</b> nömrəsinə&nbsp&nbsp&nbsp<b>%provider%</b> vasitəsilə edilən zəng&nbsp&nbsp&nbsp<b>%callerid%</b> ünvanına yönəldiləcək',
+    'ir_RuleDescriptionWithoutNumber_v2' => '&nbsp&nbsp&nbsp<b>%provider%</b> vasitəsilə <b>istənilən nömrəyə</b> zəng&nbsp&nbsp&nbsp<b>%callerid%</b> ünvanına yönəldiləcək',
+    'ir_RuleDescriptionWithoutProvider_v2' => '<b>%number%</b> nömrəsinə provayderlə əlaqəsi olmayan zəng&nbsp&nbsp&nbsp<b>%callerid%</b> ünvanına yönləndiriləcək',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Provayderə istinad etmədən <b>hər hansı nömrəyə</b> zəng&nbsp&nbsp&nbsp<b>%callerid%</b> ünvanına yönəldiləcək',
 ];

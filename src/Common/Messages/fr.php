@@ -1237,4 +1237,8 @@ Vous pouvez obtenir une nouvelle clé automatiquement en remplissant le formulai
     'ex_SearchByMobile' => 'Recherche par numéro de mobile',
     'mo_ParkingExtension' => 'Emplacement de stationnement %number%',
     'sd_ToolTipFullscreen' => 'Agrandir en plein écran',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Un appel au numéro <b>%number%</b> via&nbsp&nbsp&nbsp<b>%provider%</b> sera dirigé vers&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Un appel vers <b>n\'importe quel numéro</b> via&nbsp&nbsp&nbsp<b>%provider%</b> sera dirigé vers&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Un appel sans connexion avec un opérateur vers le numéro <b>%number%</b> sera dirigé vers&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Un appel sans référence à un fournisseur vers <b>n\'importe quel numéro</b> sera dirigé vers&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

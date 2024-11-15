@@ -1236,4 +1236,8 @@ De coupon kan één keer worden geactiveerd, waarna deze wordt ingewisseld.',
     'ex_SearchByID' => 'Zoeken op interne werknemers-ID',
     'ex_SearchByCustomPhrase' => 'Zoeken in volledige tekst',
     'sd_ToolTipFullscreen' => 'Uitbreiden naar volledig scherm',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Een oproep naar <b>een willekeurig nummer</b> via&nbsp&nbsp&nbsp<b>%provider%</b> wordt doorgestuurd naar&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Een oproep zonder verwijzing naar een provider naar <b>een willekeurig nummer</b> wordt doorgestuurd naar&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Een oproep naar het nummer <b>%number%</b> via&nbsp&nbsp&nbsp<b>%provider%</b> wordt doorgestuurd naar&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Een oproep zonder verbinding met een provider naar het nummer <b>%number%</b> wordt doorgestuurd naar&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

@@ -1237,4 +1237,8 @@ Kuponen kan aktiveres én gang, hvorefter den bliver indløst.',
     'ex_SearchByCustomPhrase' => 'Fuld tekstsøgning',
     'mo_ParkingExtension' => 'Parkeringsplads %number%',
     'sd_ToolTipFullscreen' => 'Udvid til fuld skærm',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Et opkald til nummeret <b>%number%</b> via&nbsp&nbsp&nbsp<b>%provider%</b> vil blive dirigeret til&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Et opkald til <b>et hvilket som helst nummer</b> via&nbsp&nbsp&nbsp<b>%provider%</b> vil blive dirigeret til&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Et opkald uden forbindelse til en udbyder til nummeret <b>%number%</b> vil blive dirigeret til&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Et opkald uden henvisning til en udbyder til <b>et hvilket som helst nummer</b> vil blive dirigeret til&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

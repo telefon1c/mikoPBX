@@ -1235,4 +1235,8 @@ Kupongin voi aktivoida kerran, jonka jälkeen se lunastetaan.',
     'ex_SearchByExtension' => 'Hae alanumeron mukaan',
     'mo_ParkingExtension' => 'Pysäköintipaikka %number%',
     'sd_ToolTipFullscreen' => 'Laajenna koko näyttöön',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Puhelu numeroon <b>%number%</b>&nbsp&nbsp&nbsp<b>%provider%</b> kautta ohjataan numeroon&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Puhelu <b>mihin tahansa numeroon</b> kautta&nbsp&nbsp&nbsp<b>%provider%</b> ohjataan numeroon&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Puhelu ilman yhteyttä palveluntarjoajaan numeroon <b>%number%</b> ohjataan numeroon&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Puhelu ilman viittausta palveluntarjoajaan <b>mihin tahansa numeroon</b> ohjataan numeroon&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

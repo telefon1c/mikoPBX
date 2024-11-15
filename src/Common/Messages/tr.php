@@ -1237,4 +1237,8 @@ Kayıt formunu doldurarak otomatik olarak yeni bir anahtar alabilirsiniz.<br>',
     'ex_SearchByEmail' => 'E-postayla ara',
     'ex_SearchByCustomPhrase' => 'Tam metin araması',
     'sd_ToolTipFullscreen' => 'Tam ekrana genişlet',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => '<b>%number%</b> numarasına&nbsp&nbsp&nbsp<b>%provider%</b> aracılığıyla yapılan çağrı,&nbsp&nbsp&nbsp<b>%callerid%</b> adresine yönlendirilecek',
+    'ir_RuleDescriptionWithoutNumber_v2' => '&nbsp&nbsp&nbsp<b>%provider%</b> aracılığıyla <b>herhangi bir numaraya</b> yapılan çağrı,&nbsp&nbsp&nbsp<b>%callerid%</b> numarasına yönlendirilecek',
+    'ir_RuleDescriptionWithoutProvider_v2' => '<b>%number%</b> numarasına bir sağlayıcıyla bağlantısı olmayan bir çağrı&nbsp&nbsp&nbsp<b>%callerid%</b> adresine yönlendirilecek',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => '<b>Herhangi bir numaraya</b> bir sağlayıcı referansı olmadan yapılan çağrı,&nbsp&nbsp&nbsp<b>%callerid%</b> adresine yönlendirilecektir.',
 ];

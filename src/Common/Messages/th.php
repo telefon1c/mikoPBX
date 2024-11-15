@@ -1235,4 +1235,8 @@ return [
     'mo_ParkingExtension' => 'ช่องจอดรถ %number%',
     'ex_SearchByExtension' => 'ค้นหาตามหมายเลขส่วนขยาย',
     'sd_ToolTipFullscreen' => 'ขยายให้เต็มหน้าจอ',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'การโทรไปที่หมายเลข <b>%number%</b> ผ่าน&nbsp&nbsp&nbsp<b>%provider%</b> จะถูกส่งไปที่&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'การโทรไปยัง <b>หมายเลขใดก็ได้</b> ผ่าน&nbsp&nbsp&nbsp<b>%provider%</b> จะถูกส่งไปที่&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'การโทรโดยไม่เชื่อมต่อกับผู้ให้บริการหมายเลข <b>%number%</b> จะถูกส่งไปที่&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'การโทรโดยไม่อ้างอิงถึงผู้ให้บริการไปยัง <b>หมายเลขใดๆ</b> จะถูกส่งไปยัง&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

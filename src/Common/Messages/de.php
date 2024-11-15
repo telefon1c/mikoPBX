@@ -1240,4 +1240,8 @@ Der Gutschein kann einmalig aktiviert und anschließend eingelöst werden.',
     'ex_SearchByCustomPhrase' => 'Volltextsuche',
     'mo_ParkingExtension' => 'Parkplatz %number%',
     'sd_ToolTipFullscreen' => 'Auf Vollbild erweitern',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Ein Anruf an die Nummer <b>%number%</b> über&nbsp&nbsp&nbsp<b>%provider%</b> wird an&nbsp&nbsp&nbsp<b>%callerid%</b> weitergeleitet',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Ein Anruf an <b>eine beliebige Nummer</b> über&nbsp&nbsp&nbsp<b>%provider%</b> wird an&nbsp&nbsp&nbsp<b>%callerid%</b> weitergeleitet',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Ein Anruf ohne Verbindung zu einem Anbieter an die Nummer <b>%number%</b> wird an&nbsp&nbsp&nbsp<b>%callerid%</b> weitergeleitet',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Ein Anruf ohne Anbieterangabe an <b>beliebige Nummer</b> wird an&nbsp&nbsp&nbsp<b>%callerid%</b> weitergeleitet',
 ];

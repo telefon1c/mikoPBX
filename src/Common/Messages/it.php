@@ -1237,4 +1237,8 @@ Il coupon può essere attivato una volta, dopodiché viene riscattato.',
     'ex_SearchByID' => 'Cerca per ID dipendente interno',
     'ex_SearchByCustomPhrase' => 'Ricerca nel testo completo',
     'sd_ToolTipFullscreen' => 'Espandi a schermo intero',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Una chiamata al numero <b>%number%</b> tramite&nbsp&nbsp&nbsp<b>%provider%</b> verrà indirizzata a&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Una chiamata senza connessione ad un provider al numero <b>%number%</b> verrà indirizzata a&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Una chiamata senza riferimento a un fornitore a <b>qualsiasi numero</b> verrà indirizzata a&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Una chiamata a <b>qualsiasi numero</b> tramite&nbsp&nbsp&nbsp<b>%provider%</b> verrà indirizzata a&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

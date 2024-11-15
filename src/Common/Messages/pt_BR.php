@@ -1236,4 +1236,8 @@ Você pode obter uma nova chave automaticamente preenchendo o formulário de reg
     'ex_SearchByExtension' => 'Pesquisar por número de ramal',
     'mo_ParkingExtension' => 'Vaga de estacionamento %number%',
     'sd_ToolTipFullscreen' => 'Expandir para tela inteira',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Uma chamada para <b>qualquer número</b> via&nbsp&nbsp&nbsp<b>%provider%</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Uma chamada sem conexão com um provedor para o número <b>%number%</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Uma chamada para o número <b>%number%</b> via&nbsp&nbsp&nbsp<b>%provider%</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Uma chamada sem referência a um provedor para <b>qualquer número</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

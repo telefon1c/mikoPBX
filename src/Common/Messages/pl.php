@@ -1237,4 +1237,8 @@ Kupon można aktywować jednorazowo, po czym zostaje on wykorzystany.',
     'mo_ParkingExtension' => 'Miejsce parkingowe %number%',
     'ex_SearchByExtension' => 'Wyszukaj według numeru wewnętrznego',
     'sd_ToolTipFullscreen' => 'Rozwiń do pełnego ekranu',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Połączenie bez wskazania operatora na <b>dowolny numer</b> zostanie przekierowane na numer&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Połączenie pod numer <b>%number%</b> przez&nbsp&nbsp&nbsp<b>%provider%</b> zostanie przekierowane na numer&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Połączenie z <b>dowolnym numerem</b> przez&nbsp&nbsp&nbsp<b>%provider%</b> zostanie przekierowane na numer&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Połączenie bez połączenia z operatorem na numer <b>%number%</b> zostanie przekierowane na&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

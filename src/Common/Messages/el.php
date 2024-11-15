@@ -1237,4 +1237,8 @@ return [
     'mo_ParkingExtension' => 'Θέση στάθμευσης %number%',
     'ex_SearchByExtension' => 'Αναζήτηση με αριθμό επέκτασης',
     'sd_ToolTipFullscreen' => 'Ανάπτυξη σε πλήρη οθόνη',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Μια κλήση στον αριθμό <b>%number%</b> μέσω&nbsp&nbsp&nbsp<b>%provider%</b> θα κατευθυνθεί στο&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Μια κλήση σε <b>οποιονδήποτε αριθμό</b> μέσω&nbsp&nbsp&nbsp<b>%provider%</b> θα κατευθυνθεί στο&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Μια κλήση χωρίς σύνδεση με έναν πάροχο στον αριθμό <b>%number%</b> θα κατευθυνθεί στο&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Μια κλήση χωρίς αναφορά σε πάροχο σε <b>οποιονδήποτε αριθμό</b> θα κατευθύνεται στο&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

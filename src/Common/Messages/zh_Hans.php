@@ -1237,4 +1237,8 @@ return [
     'ex_SearchByMobile' => '按手机号码搜索',
     'ex_SearchByCustomPhrase' => '全文搜索',
     'sd_ToolTipFullscreen' => '展开至全屏',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => '通过<b>%provider%</b>拨打<b>%number%</b>号码将被转接到<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => '通过<b>%provider%</b>拨打<b>任何号码</b>将被转接至<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => '未连接至提供商的号码<b>%number%</b>的呼叫将被定向至<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => '未提及提供商的<b>任何号码</b>的呼叫将被定向至&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

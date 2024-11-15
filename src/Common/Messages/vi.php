@@ -1237,4 +1237,8 @@ Phiếu giảm giá có thể được kích hoạt một lần, sau đó nó s�
     'ex_SearchByCustomPhrase' => 'Tìm kiếm toàn văn',
     'mo_ParkingExtension' => 'Khe đỗ xe %number%',
     'sd_ToolTipFullscreen' => 'Mở rộng ra toàn màn hình',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Cuộc gọi đến số <b>%number%</b> qua&nbsp&nbsp&nbsp<b>%provider%</b> sẽ được chuyển hướng đến&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Cuộc gọi tới <b>bất kỳ số nào</b> qua&nbsp&nbsp&nbsp<b>%provider%</b> sẽ được chuyển hướng đến&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Cuộc gọi không có kết nối với nhà cung cấp tới số <b>%number%</b> sẽ được chuyển hướng đến&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Cuộc gọi tới <b>bất kỳ số nào</b> không liên quan đến nhà cung cấp sẽ được chuyển hướng đến&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

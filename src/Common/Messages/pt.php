@@ -1237,4 +1237,8 @@ Você pode obter uma nova chave automaticamente preenchendo o formulário de reg
     'ex_SearchByID' => 'Pesquisar por ID de funcionário interno',
     'ex_SearchByCustomPhrase' => 'Pesquisa de texto completo',
     'sd_ToolTipFullscreen' => 'Expandir para tela inteira',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Uma chamada para o número <b>%number%</b> via&nbsp&nbsp&nbsp<b>%provider%</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Uma chamada para <b>qualquer número</b> via&nbsp&nbsp&nbsp<b>%provider%</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Uma chamada sem conexão com um provedor para o número <b>%number%</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Uma chamada sem referência a um provedor para <b>qualquer número</b> será direcionada para&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

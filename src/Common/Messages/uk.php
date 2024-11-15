@@ -1237,4 +1237,8 @@ return [
     'ex_SearchByCustomPhrase' => 'Повнотекстовий пошук',
     'ex_SearchByEmail' => 'Пошук електронною поштою',
     'sd_ToolTipFullscreen' => 'Розгорнути на весь екран',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Дзвінок на номер <b>%number%</b> через&nbsp&nbsp&nbsp<b>%provider%</b> буде направлений на&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Дзвінок на <b>будь-який номер</b> через&nbsp&nbsp&nbsp<b>%provider%</b> буде направлений на&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Дзвінок без прив\'язки до провайдера на номер <b>%number%</b> буде направлений на &nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Дзвінок без прив\'язки до провайдера на <b>будь-який номер</b> буде направлений на&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

@@ -1237,4 +1237,8 @@ El cupón se puede activar una vez y luego se canjea.',
     'ex_SearchByID' => 'Buscar por ID de empleado interno',
     'ex_SearchByCustomPhrase' => 'Búsqueda de texto completo',
     'sd_ToolTipFullscreen' => 'Ampliar a pantalla completa',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Una llamada al número <b>%number%</b> a través de&nbsp&nbsp&nbsp<b>%provider%</b> se dirigirá a&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Una llamada a <b>cualquier número</b> a través de&nbsp&nbsp&nbsp<b>%provider%</b> se dirigirá a&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Una llamada sin conexión a un proveedor al número <b>%number%</b> será dirigida a&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Una llamada sin referencia a un proveedor a <b>cualquier número</b> será dirigida a&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

@@ -1237,4 +1237,8 @@ return [
     'ex_SearchByCustomPhrase' => '全文検索',
     'mo_ParkingExtension' => '駐車スロット%number%',
     'sd_ToolTipFullscreen' => '全画面に拡大',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => '&nbsp&nbsp&nbsp<b>%provider%</b> 経由で番号 <b>%number%</b> への通話は、&nbsp&nbsp&nbsp<b>%callerid%</b> に転送されます。',
+    'ir_RuleDescriptionWithoutNumber_v2' => '&nbsp&nbsp&nbsp<b>%provider%</b> 経由で <b>任意の番号</b>への通話は、&nbsp&nbsp&nbsp<b>%callerid%</b> に転送されます。',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'プロバイダに接続されていない番号 <b>%number%</b> への通話は、&nbsp&nbsp&nbsp<b>%callerid%</b> に転送されます。',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'プロバイダを参照せずに<b>任意の番号</b>への通話は、&nbsp&nbsp&nbsp<b>%callerid%</b> に転送されます。',
 ];

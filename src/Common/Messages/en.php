@@ -1240,4 +1240,8 @@ The coupon can be activated once, after which it becomes redeemed.',
     'ex_SearchByEmail' => 'Search by email',
     'ex_SearchByID' => 'Search by internal employee ID',
     'sd_ToolTipFullscreen' => 'Expand to full screen',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Call to <b>%number%</b> via&nbsp&nbsp&nbsp<b>%provider%</b> will be routed to&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Call to <b>any number</b> via&nbsp&nbsp&nbsp<b>%provider%</b> will be forwarded to&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'A call without being linked to a provider to the number <b>%number%</b> will be forwarded to&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'A call without being linked to a provider to <b>any number</b> will be directed to&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

@@ -1235,4 +1235,8 @@ A kupon egyszer aktiválható, ezután válik beválthatóvá.',
     'ex_SearchByCustomPhrase' => 'Teljes szöveges keresés',
     'mo_ParkingExtension' => 'Parkolóhely %number%',
     'sd_ToolTipFullscreen' => 'Kibontás teljes képernyőre',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'A(z) <b>%number%</b> számra&nbsp&nbsp&nbsp<b>%provider%</b> keresztül érkező hívás a(z)&nbsp&nbsp&nbsp<b>%callerid%</b> címre lesz irányítva',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'A&nbsp&nbsp&nbsp<b>%provider%</b> <b>bármely számra</b> érkező hívás a&nbsp&nbsp&nbsp<b>%callerid%</b> címre lesz irányítva',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'A(z) <b>%number%</b> számra érkező hívás szolgáltatóval való kapcsolat nélkül a&nbsp&nbsp&nbsp<b>%callerid%</b> címre lesz irányítva',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'A szolgáltatóra való hivatkozás nélkül <b>bármely számra</b> érkező hívások a következőre lesznek irányítva:&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];

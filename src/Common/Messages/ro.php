@@ -1236,4 +1236,8 @@ Cuponul poate fi activat o singură dată, după care devine valorificat.',
     'ex_SearchByCustomPhrase' => 'Căutare text integral',
     'mo_ParkingExtension' => 'Spațiu de parcare %number%',
     'sd_ToolTipFullscreen' => 'Extindeți la ecran complet',
+    'ir_RuleDescriptionWithNumberAndWithProvider_v2' => 'Un apel către numărul <b>%number%</b> prin&nbsp&nbsp&nbsp<b>%provider%</b> va fi direcționat către&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumber_v2' => 'Un apel către <b>orice număr</b> prin&nbsp&nbsp&nbsp<b>%provider%</b> va fi direcționat către&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutProvider_v2' => 'Un apel fără conexiune cu un furnizor la numărul <b>%number%</b> va fi direcționat către&nbsp&nbsp&nbsp<b>%callerid%</b>',
+    'ir_RuleDescriptionWithoutNumberAndWithoutProvider_v2' => 'Un apel fără referire la un furnizor către <b>orice număr</b> va fi direcționat către&nbsp&nbsp&nbsp<b>%callerid%</b>',
 ];
