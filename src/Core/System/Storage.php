@@ -772,8 +772,8 @@ class Storage extends Injectable
     private function createWorkDirs(): void
     {
         $path = '';
-        $mountPath = Util::which('mount');
-        Processes::mwExec("$mountPath -o remount,rw /offload 2> /dev/null");
+        $busyBoxPath = Util::which('busybox');
+        Processes::mwExec("$busyBoxPath mount -o remount,rw /offload 2> /dev/null");
 
         $isLiveCd = file_exists('/offload/livecd');
 
@@ -816,7 +816,7 @@ class Storage extends Injectable
         $this->clearCacheFiles();
         $this->clearTmpFiles();
         $this->applyFolderRights();
-        Processes::mwExec("$mountPath -o remount,ro /offload 2> /dev/null");
+        Processes::mwExec("$busyBoxPath mount -o remount,ro /offload 2> /dev/null");
     }
 
     /**
@@ -1088,8 +1088,8 @@ class Storage extends Injectable
     public function createWorkDirsAfterDBUpgrade(): void
     {
         // Remount /offload directory as read-write
-        $mountPath = Util::which('mount');
-        Processes::mwExec("$mountPath -o remount,rw /offload 2> /dev/null");
+        $busyBoxPath = Util::which('busybox');
+        Processes::mwExec("$busyBoxPath mount -o remount,rw /offload 2> /dev/null");
 
         // Create symlinks for module caches
         $this->createModulesCacheSymlinks();
@@ -1098,7 +1098,7 @@ class Storage extends Injectable
         $this->applyFolderRights();
 
         // Remount /offload directory as read-only
-        Processes::mwExec("$mountPath -o remount,ro /offload 2> /dev/null");
+        Processes::mwExec("$busyBoxPath mount -o remount,ro /offload 2> /dev/null");
     }
 
     /**

@@ -193,8 +193,8 @@ class System extends Injectable
      */
     public static function setupLocales(): void
     {
-        $mountPath = Util::which('mount');
-        shell_exec("$mountPath -o remount,rw /offload 2> /dev/null");
+        $busyBoxPath = Util::which('busybox');
+        Processes::mwExec("$busyBoxPath mount -o remount,rw /offload 2> /dev/null");
         $locales = ['en_US', 'en_GB', 'ru_RU'];
         $localeDefPath = Util::which('localedef');
         $localePath = Util::which('locale');
@@ -204,7 +204,7 @@ class System extends Injectable
             }
             shell_exec("$localeDefPath -i $locale -f UTF-8 $locale.UTF-8");
         }
-        shell_exec("$mountPath -o remount,ro /offload 2> /dev/null");
+        Processes::mwExec("$busyBoxPath mount -o remount,ro /offload 2> /dev/null");
     }
 
     /**

@@ -88,10 +88,10 @@ _remountOffload()
   mountPoint="$(mount | grep /offload | cut -d ' ' -f 1)";
   if [ "${nowMode}" == 'rw' ]; then
     newMode='ro';
-    mount -o remount,ro "$mountPoint";
+    /bin/busybox mount -o remount,ro "$mountPoint";
   else
     newMode='rw';
-    mount -o remount,rw "$mountPoint";
+    /bin/busybox mount -o remount,rw "$mountPoint";
   fi;
   echo "Mode for /offload ${newMode} disk:${mountPoint}";
 }

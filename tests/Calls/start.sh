@@ -15,7 +15,7 @@ function echo_info() {
 
 echo_header 'Init asterisk...';
 dirName="$(realpath "$(dirname "$0")")";
-/bin/mount -o remount,rw /offload/
+/bin/busybox mount -o remount,rw /offload/
 ############################################################
 ##### Setup configs
 # Убиваем старый процесс.
