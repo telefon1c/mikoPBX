@@ -1227,9 +1227,8 @@ class Storage extends Injectable
         $exec_dirs[] = appPath('src/Core/Asterisk/agi-bin');
         $exec_dirs[] = appPath('src/Core/Rc');
         Util::addExecutableRights(implode(' ', $exec_dirs));
-
-        $mountPath = Util::which('mount');
-        Processes::mwExec("$mountPath -o remount,ro /offload 2> /dev/null");
+        $busyBoxPath = Util::which('busybox');
+        Processes::mwExec("$busyBoxPath mount -o remount,ro /offload 2> /dev/null");
     }
 
     /**
