@@ -52,17 +52,17 @@ if [ "$totalMb" -le "600" ]; then
   exit 0;
 fi
 
+# Looking for a way to the fourth section
+partitionFour=$(/bin/lsblk -r "$dev" -p -o NAME,TYPE| grep "part$" | /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$");
 # Get partition info for the device
 count=$(/sbin/sfdisk -l "${dev}" | /bin/busybox grep "^/dev" | /bin/busybox wc -l);
-if [ "$count" -eq "4" ]; then
+if [ -n "$partitionFour" ]; then
     # The fourth partition already exists, format it and resize
-    partitionName=$(/bin/lsblk -r | /bin/busybox grep "$(/bin/busybox basename "$dev")" |  /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$" | /bin/sort -u);
-    partitionFour="/dev/${partitionName}";
     echo "Formatting and resizing the existing fourth partition ${partitionFour}..."
     /sbin/parted --script "${dev}" resizepart 4 100%
-elif [ "$count" -eq "3" ]; then
+elif [ "$count" -eq 3 ] || [ "$count" -eq 4 ]; then
     # There are only 3 partitions, add a new one
-    echo "Adding a new partition..."
+    echo "Adding a new partition №4..."
     # Use parted to create a new partition on the device.
     # The new partition is primary, has ext4 filesystem, starts from 600MiB, and occupies the rest of the disk.
     /sbin/parted --script --align optimal "${dev}" 'mkpart primary ext4 600MiB 100%';
@@ -97,7 +97,7 @@ done
 
 # If the partition was successfully created
 if [ "$resultParted" = "0" ];then
-    if [ "$action" == "create" ]; then
+    if [ "$action" = "create" ]; then
         /sbin/mkfs.ext4 -qF "${partitionFour}"
         sleep 5;
         resize2fs ${partitionFour}

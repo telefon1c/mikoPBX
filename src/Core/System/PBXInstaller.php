@@ -205,6 +205,7 @@ class PBXInstaller extends Injectable
         // Start the installation process
         echo Util::translate("Installing PBX...").PHP_EOL;
         $this->unmountPartitions();
+        $this->convertDiscLayout();
         $this->unpackImage();
         $this->mountStorage();
         $this->copyConfiguration();
@@ -213,6 +214,44 @@ class PBXInstaller extends Injectable
         file_put_contents('/tmp/ejectcd', '');
         System::reboot();
     }
+
+    /**
+     * Converting the disk layout
+     * @param $disk
+     * @return void
+     */
+    private function convertDiscLayout($disk):void
+    {
+        if (!file_exists($disk)) {
+            $disk = "/dev/$disk";
+        }
+        if (!file_exists($disk)) {
+            return;
+        }
+        $gDiskPath = Util::which('gdisk');
+        if (empty($gDiskPath)) {
+            return;
+        }
+        $partedPath = Util::which('parted');
+        $command = "$partedPath $disk print | grep 'Partition Table' | awk '{print $3}'";
+        exec($command, $partitionTypeOutput, $partedStatus);
+        if ($partedStatus !== 0 || empty($partitionTypeOutput)) {
+            return;
+        }
+        $partitionType = trim($partitionTypeOutput[0]);
+        if ($partitionType === "msdos") {
+            echo " - Converting from MBR to GPT...\n";
+            $echoPath = Util::which('echo');
+            $gDiskCommand = "$echoPath -e \"w\\nY\\n\" | $gDiskPath $disk > /dev/null 2>&1";
+            exec($gDiskCommand, $gDiskOutput, $gDiskStatus);
+            if ($gDiskStatus === 0) {
+                echo " - The conversion to GPT has been completed successfully.\n";
+            } else {
+                echo " - Error converting to GPT.\n";
+            }
+        }
+    }
+
 
     /**
      * Unmount the partitions of the selected disk.
