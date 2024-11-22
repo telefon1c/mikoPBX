@@ -234,9 +234,7 @@ class PBXInstaller extends Injectable
         }
         $echoPath = Util::which('echo');
         $partedPath = Util::which('parted');
-        $fixCommand = "echo Fix | $partedPath --script $disk print";
-        exec($fixCommand);
-        $command = "$partedPath --script $disk print | grep 'Partition Table' | awk '{print $3}'";
+        $command = "$partedPath --script $disk print 2>/dev/null | grep 'Partition Table' | awk '{print $3}'";
         exec($command, $partitionTypeOutput, $partedStatus);
         if ($partedStatus !== 0 || empty($partitionTypeOutput)) {
             return;
