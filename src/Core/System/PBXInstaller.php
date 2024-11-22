@@ -217,11 +217,11 @@ class PBXInstaller extends Injectable
 
     /**
      * Converting the disk layout
-     * @param $disk
      * @return void
      */
-    private function convertDiscLayout($disk):void
+    private function convertDiscLayout():void
     {
+        $disk = $this->target_disk;
         if (!file_exists($disk)) {
             $disk = "/dev/$disk";
         }
