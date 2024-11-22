@@ -110,7 +110,8 @@ fi
 # Inform the user of the installation process
 if [ -r "${img_file}" ]; then
   if command -v gdisk > /dev/null 2>&1; then
-    PARTITION_TYPE=$(/sbin/parted "$DISK" print | grep "Partition Table" | awk '{print $3}')
+    echo Fix | /sbin/parted --script "$DISK" print >/dev/null 2>&1;
+    PARTITION_TYPE=$(/sbin/parted --script "$DISK" print | grep "Partition Table" | awk '{print $3}')
     echo " - Performing an action for the msdos section"
     if [ "$PARTITION_TYPE" == "msdos" ]; then
       echo -e "w\nY\n" | gdisk "/dev/${systemDevice}" > /dev/null 2>&1;

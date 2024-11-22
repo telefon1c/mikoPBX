@@ -232,8 +232,11 @@ class PBXInstaller extends Injectable
         if (empty($gDiskPath)) {
             return;
         }
+        $echoPath = Util::which('echo');
         $partedPath = Util::which('parted');
-        $command = "$partedPath $disk print | grep 'Partition Table' | awk '{print $3}'";
+        $fixCommand = "echo Fix | $partedPath --script $disk print";
+        exec($fixCommand);
+        $command = "$partedPath --script $disk print | grep 'Partition Table' | awk '{print $3}'";
         exec($command, $partitionTypeOutput, $partedStatus);
         if ($partedStatus !== 0 || empty($partitionTypeOutput)) {
             return;
@@ -241,7 +244,6 @@ class PBXInstaller extends Injectable
         $partitionType = trim($partitionTypeOutput[0]);
         if ($partitionType === "msdos") {
             echo " - Converting from MBR to GPT...\n";
-            $echoPath = Util::which('echo');
             $gDiskCommand = "$echoPath -e \"w\\nY\\n\" | $gDiskPath $disk > /dev/null 2>&1";
             exec($gDiskCommand, $gDiskOutput, $gDiskStatus);
             if ($gDiskStatus === 0) {
