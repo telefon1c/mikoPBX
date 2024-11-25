@@ -20,7 +20,7 @@
 # Check whether the script has been run with the "create" argument; if not, exit with status code 6
 action="$1"
 if [ "$action" != "create" ] && [ "$action" != "update" ]; then
-    echo "Invalid argument: $1. Please use 'create' or 'update'."
+    echo " - Invalid argument: $1. Please use 'create' or 'update'."
     exit 6
 fi
 
@@ -40,7 +40,7 @@ fi;
 
 # Check if the device exists and is a block device
 if [ ! -b "${dev}" ];then
-  echo "Device ${dev} doesn't exist or isn't a block device."
+  echo " - Device ${dev} doesn't exist or isn't a block device."
 	exit 4; # If the device doesn't exist or isn't a block device, exit with status code 4
 fi;
 
@@ -48,27 +48,40 @@ fi;
 totalMb=$(($(busybox blockdev --getsize64 "${dev}") / 1024 / 1024));
 
 if [ "$totalMb" -le "600" ]; then
-  echo "Device ${dev} size is less than or equal to 600 MB, there's no point in creating a 4th partition."
+  echo " - Device ${dev} size is less than or equal to 600 MB, there's no point in creating a 4th partition."
   exit 0;
 fi
 
 # Looking for a way to the fourth section
-partitionFour=$(/bin/lsblk -r "$dev" -p -o NAME,TYPE| grep "part$" | /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$");
+if /sbin/parted -s "${dev}" print 2> /dev/null | /usr/bin/awk '{$1=$1; print}' | /bin/busybox grep -w '^4' > /dev/null; then
+  partitionFour=$(/bin/lsblk -r "$dev" -p -o NAME,TYPE | grep "part$" | /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$");
+else
+  partitionFour=''
+fi
+
 # Get partition info for the device
-count=$(/sbin/sfdisk -l "${dev}" | /bin/busybox grep "^/dev" | /bin/busybox wc -l);
+count=$(/sbin/sfdisk -l "${dev}" 2>/dev/null | /bin/busybox grep -c "^/dev");
 if [ -n "$partitionFour" ]; then
     # The fourth partition already exists, format it and resize
-    echo "Formatting and resizing the existing fourth partition ${partitionFour}..."
-    /sbin/parted --script "${dev}" resizepart 4 100%
+    echo " - Formatting and resizing the existing fourth partition ${partitionFour}..."
+    /sbin/parted --script "${dev}" resizepart 4 100% 2>/dev/null;
 elif [ "$count" -eq 3 ] || [ "$count" -eq 4 ]; then
+    echo " - Fix the secondary GPT header;"
+    echo -e "x\ne\nm\nw\nY\n" | /bin/gdisk "$dev" > /dev/null 2>&1;
     # There are only 3 partitions, add a new one
-    echo "Adding a new partition №4..."
+    echo " - Adding a new partition №4..."
     # Use parted to create a new partition on the device.
     # The new partition is primary, has ext4 filesystem, starts from 600MiB, and occupies the rest of the disk.
-    /sbin/parted --script --align optimal "${dev}" 'mkpart primary ext4 600MiB 100%';
+    /sbin/parted --script --align optimal "${dev}" 'mkpart primary ext4 600MiB 100%' > /dev/null 2>&1;
+    if command -v gdisk > /dev/null 2>&1; then
+      # correcting the gap between the main table and the first used sector
+      echo -e "x\ne\nj\nm\nw\nY\n" | /bin/gdisk "$dev" > /dev/null 2>&1;
+      # fix the partition table and use all the space
+      echo "fix" | parted "$dev" print free ---pretend-input-tty > /dev/null 2>&1;
+    fi;
 else
     # Not the expected number of partitions; exit
-    echo "Unexpected number of partitions. Exiting."
+    echo " - Unexpected number of partitions. Exiting."
     exit 0
 fi
 
