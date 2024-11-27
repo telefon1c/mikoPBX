@@ -110,25 +110,32 @@ fi
 # Inform the user of the installation process
 DISK="/dev/${systemDevice}";
 if [ -r "${img_file}" ]; then
+  if /sbin/parted -s "${DISK}" print 2> /dev/null | /usr/bin/awk '{$1=$1; print}' | /bin/busybox grep -w '^4' > /dev/null; then
+    partitionFour=$(/bin/lsblk -r "$DISK" -p -o NAME,TYPE | grep "part$" | /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$");
+  else
+    partitionFour=''
+  fi
   if command -v gdisk > /dev/null 2>&1; then
     PARTITION_TYPE=$(/sbin/parted --script "$DISK" print 2>/dev/null | grep "Partition Table" | awk '{print $3}');
     echo " - Performing an action for the $PARTITION_TYPE section";
     if [ "$PARTITION_TYPE" == "msdos" ]; then
-      echo " - At the end of the 4th partition, 1 Mb of free space will be required...";
-      PARTITION="4"
+      echo " - At the end of the 4th partition ($partitionFour), 1 Mb of free space will be required...";
       REDUCE_BY=1
       LAST_ENTRY=$(parted -s "$DISK" unit MiB print free 2>/dev/null | tail -n 1)
       FREE_SPACE=$(echo "$LAST_ENTRY" | awk '{print $3}' | grep -o '[0-9]*')
-      if [[ -z "$FREE_SPACE" || "$FREE_SPACE" -lt "$REDUCE_BY" ]]; then
-        echo " - Reducing the 4th section..."
+      if [[ (-z "$FREE_SPACE" || "$FREE_SPACE" -lt "$REDUCE_BY") && -n "$partitionFour" ]]; then
+      	e2fsck -f -y "$partitionFour";
+        echo " - Reducing the 4th section...";
         SECTOR_SIZE=$(blockdev --getss "$DISK")
       	SECTORS_IN_MIB=$((1024 * 1024 / SECTOR_SIZE))
       	sfdisk -d "$DISK" 2> /dev/null > disk_layout.txt
-      	CURRENT_SIZE=$(grep "^$DISK$PARTITION" disk_layout.txt | grep -o 'size=[ ]*[0-9]*' | tr -d ' ' | cut -d= -f2)
+      	CURRENT_SIZE=$(grep "^$partitionFour" disk_layout.txt | grep -o 'size=[ ]*[0-9]*' | tr -d ' ' | cut -d= -f2)
       	NEW_SIZE=$((CURRENT_SIZE - REDUCE_BY * SECTORS_IN_MIB))
-        sed -i "s|^\($DISK$PARTITION.*size=\s*\)[0-9]*\(.*\)$|\1$NEW_SIZE\2|" disk_layout.txt
+      	NEW_SIZE_MIB=$((CURRENT_SIZE / SECTORS_IN_MIB - 1))
+        sed -i "s|^\($partitionFour.*size=\s*\)[0-9]*\(.*\)$|\1$NEW_SIZE\2|" disk_layout.txt
       	sfdisk "$DISK"  > /dev/null 2>&1 < disk_layout.txt
       	rm disk_layout.txt;
+      	/sbin/resize2fs "$partitionFour" "$NEW_SIZE_MIB"M;
       fi
       echo " - Converting markup to GPT."
       echo -e "w\nY\n" | /bin/gdisk "$DISK" > /dev/null 2>&1;
@@ -139,6 +146,12 @@ if [ -r "${img_file}" ]; then
         echo " - Error converting to GPT."
       fi
     fi
+  fi
+
+  if [ -n "$partitionFour" ]; then
+    export FS_BACKUP_PART4=fs-backup-part4.img;
+    echo " - Start backup fs $FS_BACKUP_PART4 super block for part4 ($partitionFour)"
+    dd if="$partitionFour" of="$FS_BACKUP_PART4" bs=1M count=1 >/dev/null 2>&1;
   fi
 
   echo " - Installing new image on $DISK"
