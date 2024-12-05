@@ -110,26 +110,26 @@ fi
 # Inform the user of the installation process
 DISK="/dev/${systemDevice}";
 if [ -r "${img_file}" ]; then
-  if /sbin/parted -s "${DISK}" print 2> /dev/null | /usr/bin/awk '{$1=$1; print}' | /bin/busybox grep -w '^4' > /dev/null; then
-    partitionFour=$(/bin/lsblk -r "$DISK" -p -o NAME,TYPE | grep "part$" | /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$");
+  if /sbin/parted -s "${DISK}" print 2> /dev/null | /bin/busybox awk '{$1=$1; print}' | /bin/busybox grep -w '^4' > /dev/null; then
+    partitionFour=$(/bin/lsblk -r "$DISK" -p -o NAME,TYPE | /bin/busybox grep "part$" | /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$");
   else
     partitionFour=''
   fi
   if command -v gdisk > /dev/null 2>&1; then
-    PARTITION_TYPE=$(/sbin/parted --script "$DISK" print 2>/dev/null | grep "Partition Table" | awk '{print $3}');
+    PARTITION_TYPE=$(/sbin/parted --script "$DISK" print 2>/dev/null | /bin/busybox grep "Partition Table" | /bin/busybox awk '{print $3}');
     echo " - Performing an action for the $PARTITION_TYPE section";
     if [ "$PARTITION_TYPE" == "msdos" ]; then
       echo " - At the end of the 4th partition ($partitionFour), 1 Mb of free space will be required...";
       REDUCE_BY=1
       LAST_ENTRY=$(parted -s "$DISK" unit MiB print free 2>/dev/null | tail -n 1)
-      FREE_SPACE=$(echo "$LAST_ENTRY" | awk '{print $3}' | grep -o '[0-9]*')
+      FREE_SPACE=$(echo "$LAST_ENTRY" | /bin/busybox awk '{print $3}' | /bin/busybox grep -o '[0-9]*')
       if [[ (-z "$FREE_SPACE" || "$FREE_SPACE" -lt "$REDUCE_BY") && -n "$partitionFour" ]]; then
       	e2fsck -f -y "$partitionFour";
         echo " - Reducing the 4th section...";
         SECTOR_SIZE=$(blockdev --getss "$DISK")
       	SECTORS_IN_MIB=$((1024 * 1024 / SECTOR_SIZE))
       	sfdisk -d "$DISK" 2> /dev/null > disk_layout.txt
-      	CURRENT_SIZE=$(grep "^$partitionFour" disk_layout.txt | grep -o 'size=[ ]*[0-9]*' | tr -d ' ' | cut -d= -f2)
+      	CURRENT_SIZE=$(/bin/busybox grep "^$partitionFour" disk_layout.txt | /bin/busybox grep -o 'size=[ ]*[0-9]*' | tr -d ' ' | cut -d= -f2)
       	NEW_SIZE=$((CURRENT_SIZE - REDUCE_BY * SECTORS_IN_MIB))
       	NEW_SIZE_MIB=$((CURRENT_SIZE / SECTORS_IN_MIB - 1))
         sed -i "s|^\($partitionFour.*size=\s*\)[0-9]*\(.*\)$|\1$NEW_SIZE\2|" disk_layout.txt
