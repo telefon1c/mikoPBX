@@ -129,7 +129,7 @@ if [ -r "${img_file}" ]; then
         SECTOR_SIZE=$(blockdev --getss "$DISK")
       	SECTORS_IN_MIB=$((1024 * 1024 / SECTOR_SIZE))
       	sfdisk -d "$DISK" 2> /dev/null > disk_layout.txt
-      	CURRENT_SIZE=$(/bin/busybox grep "^$partitionFour" disk_layout.txt | /bin/busybox grep -o 'size=[ ]*[0-9]*' | tr -d ' ' | cut -d= -f2)
+      	CURRENT_SIZE=$(/bin/busybox grep "^$partitionFour" disk_layout.txt | /bin/busybox grep -o 'size=[ ]*[0-9]*' | /bin/busybox tr -d ' ' | cut -d= -f2)
       	NEW_SIZE=$((CURRENT_SIZE - REDUCE_BY * SECTORS_IN_MIB))
       	NEW_SIZE_MIB=$((CURRENT_SIZE / SECTORS_IN_MIB - 1))
         sed -i "s|^\($partitionFour.*size=\s*\)[0-9]*\(.*\)$|\1$NEW_SIZE\2|" disk_layout.txt

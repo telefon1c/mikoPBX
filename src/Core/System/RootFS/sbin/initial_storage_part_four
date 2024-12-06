@@ -53,7 +53,7 @@ if [ "$totalMb" -le "600" ]; then
 fi
 
 # Looking for a way to the fourth section
-if /sbin/parted -s "${dev}" print 2> /dev/null | /usr/bin/awk '{$1=$1; print}' | /bin/busybox grep -w '^4' > /dev/null; then
+if /sbin/parted -s "${dev}" print 2> /dev/null | /bin/busybox awk '{$1=$1; print}' | /bin/busybox grep -w '^4' > /dev/null; then
   partitionFour=$(/bin/lsblk -r "$dev" -p -o NAME,TYPE | grep "part$" | /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$");
 else
   partitionFour=''
