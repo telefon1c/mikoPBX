@@ -716,7 +716,9 @@ function event_dial_create_chan()
 
     -- Retrieve the unique ID of the call
     local id = get_variable("pt1c_UNIQUEID");
-
+    if(id=='') then
+        id = get_variable("int_UNIQUEID");
+    end
     -- Set the action, event time, unique ID, destination channel, and linked ID for the dial creation channel event
     data['action']      = 'dial_create_chan';
     data['event_time']  = getNowDate();
@@ -824,6 +826,9 @@ function event_dial_answer()
     data['agi_channel'] = get_variable("CHANNEL");
 
     local id     = get_variable("pt1c_UNIQUEID");
+    if(id=='') then
+        id = get_variable("int_UNIQUEID");
+    end
     local monDir = get_variable("MONITOR_DIR");
 
     -- Check if recording should be enabled based on monitor configuration and channel type
