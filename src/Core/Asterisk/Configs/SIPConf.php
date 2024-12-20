@@ -1231,6 +1231,7 @@ class SIPConf extends AsteriskConfigClass
             'qualify_frequency' => '60',
             'qualify_timeout'   => '5',
             'max_contacts'      => '5',
+            'remove_existing'   => 'yes',
         ];
 
         // Override PJSIP options from modules
