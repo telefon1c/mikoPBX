@@ -163,9 +163,9 @@ if [ -r "${img_file}" ]; then
   fi
   resultPv="$?";
 
-   # If the pv command fails or there aren't three primary partitions, restore the system image from the backup
+  # If the pv command fails or there aren't three primary partitions, restore the system image from the backup
   if [ ! "$resultPv" = '0' ] || [ ! "$(/bin/lsblk -l "$DISK" | /bin/busybox grep -c part)" = '4' ]; then
-    if [ -f "$backupImg" ]; thenif [ ! "$resultPv" = '0' ] || [ ! "$(/bin/lsblk -l "$DISK" | /bin/busybox grep -c part)" = '4' ]; then
+    if [ -f "$backupImg" ]; then
       echo " - There are some errors, restoring system from backup to /dev/${systemDevice}"
       if test -w /dev/ttyS0 && ! /bin/busybox setserial -g /dev/ttyS0 | /bin/grep -q unknown; then
         /bin/pv -p "$backupImg" | /bin/gunzip | dd of="$DISK" bs=4M 2>&1 | /bin/busybox tee /dev/ttyS0 >/dev/null
