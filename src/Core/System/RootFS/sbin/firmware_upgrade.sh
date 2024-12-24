@@ -36,7 +36,7 @@ fi
 # Global variables
 ENV_FILE=".env"
 if [ -f "$ENV_FILE" ]; then
-    export $(cat "$ENV_FILE" | grep -v '^#' | xargs)
+    export $(xargs < "$ENV_FILE");
 fi
 
 # mountDiskPart: Mounts a disk partition by UUID.

@@ -17,31 +17,29 @@
 #
 
 ENV_FILE=".env"
-# vars UUID_STORAGE, UPDATE_IMG_FILE in ENV_FILE
+# vars STORAGE_UUID, UPDATE_IMG_FILE in ENV_FILE
 if [ -f "$ENV_FILE" ]; then
-    export $(cat "$ENV_FILE" | grep -v '^#' | xargs)
+    export $(xargs < "$ENV_FILE");
 fi
 # Задание переменных
 MOUNT_DIR="/mnt"
 STORAGE_DIR="/storage/usbdisk1"
-UPDATE_IMG_FILE_PATH="$UPDATE_IMG_FILE"
-RAW_IMG_FILE="${UPDATE_IMG_FILE_PATH}_D.raw"
-UUID_STORAGE="$STORAGE_UUID"
 FIRMWARE_IMG_PATH="/mnt/firmware.img"
+RAW_IMG_FILE="${UPDATE_IMG_FILE}_D.raw"
 
 # Создание необходимых директорий
 mkdir -p "$MOUNT_DIR" "$STORAGE_DIR"
 
 echo " - mount storage for upgrade"
-mount -rw UUID="$UUID_STORAGE" "$STORAGE_DIR" 2> /dev/null
+mount -rw UUID="$STORAGE_UUID" "$STORAGE_DIR" 2> /dev/null
 MOUNT_RESULT=$?
 if [ "$MOUNT_RESULT" -ne 0 ]; then
-  echo " - Fail mount storage with UUID=$UUID_STORAGE to $STORAGE_DIR ..."
+  echo " - Fail mount storage with UUID=$STORAGE_UUID to $STORAGE_DIR ..."
   exit 1
 fi
 
 echo " - unpack image file to raw format"
-gunzip -c "$UPDATE_IMG_FILE_PATH" > "$RAW_IMG_FILE"
+/bin/busybox gunzip -c "$UPDATE_IMG_FILE" > "$RAW_IMG_FILE"
 loopName="$(losetup --show -f -o 524288 "$RAW_IMG_FILE")"
 
 echo " - mount raw image file"
@@ -55,7 +53,8 @@ fi
 
 if [ -f "$FIRMWARE_IMG_PATH" ]; then
   echo " - replace fake image file";
-  cp "$FIRMWARE_IMG_PATH" "$UPDATE_IMG_FILE_PATH";
+  /bin/busybox md5sum "$FIRMWARE_IMG_PATH" "$UPDATE_IMG_FILE";
+  cp "$FIRMWARE_IMG_PATH" "$UPDATE_IMG_FILE";
 else
   echo " - FAIL replace fake image file";
 fi

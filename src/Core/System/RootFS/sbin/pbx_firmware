@@ -148,10 +148,12 @@ if [ -r "${img_file}" ]; then
     fi
   fi
 
+  part4Action='create';
   if [ -n "$partitionFour" ]; then
     export FS_BACKUP_PART4=fs-backup-part4.img;
     echo " - Start backup fs $FS_BACKUP_PART4 super block for part4 ($partitionFour)"
     dd if="$partitionFour" of="$FS_BACKUP_PART4" bs=1M count=1 >/dev/null 2>&1;
+    part4Action='update';
   fi
 
   echo " - Installing new image on $DISK"
@@ -178,7 +180,7 @@ if [ -r "${img_file}" ]; then
   echo " - The execution of the dd command was finished...";
 
   # Update the partition table
-  /sbin/initial_storage_part_four update "$DISK";
+  /sbin/initial_storage_part_four "$part4Action" "$DISK";
   echo " - Check if it necessary to update 4-th storage partition. The result is ${?}...";
 fi
 

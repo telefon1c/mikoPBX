@@ -117,9 +117,13 @@ done
 # If the partition was successfully created
 if [ "$resultParted" = "0" ];then
     if [ "$action" = "create" ]; then
-        /sbin/mkfs.ext4 -qF "${partitionFour}"
+        echo " - start mkfs.ext4 $partitionFour...";
+        /sbin/mkfs.ext4 -qF "$partitionFour"
+        echo " - result $?...";
         sleep 5;
-        resize2fs ${partitionFour}
+        echo " - start resize2fs $partitionFour...";
+        resize2fs "$partitionFour"
+        echo " - result $?...";
         sleep 5;
     fi
 
@@ -137,6 +141,7 @@ if [ "$resultParted" = "0" ];then
     if [ "$mountResult" != "0" ]; then
         echo " - start check ${partitionFour}...";
         /sbin/fsck.ext4 -p "$partitionFour";
+        echo " - result $?...";
         mount -t "$type" "${partitionFour}" "$tmp_dir" 2> /dev/null > /dev/null;
         mountResult=$?;
     fi;
