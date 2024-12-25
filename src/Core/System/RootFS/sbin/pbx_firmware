@@ -115,7 +115,10 @@ if [ -r "${img_file}" ]; then
   else
     partitionFour=''
   fi
-  if command -v gdisk > /dev/null 2>&1; then
+  if command -v gdisk >/dev/null 2>&1 && [ -n "$partitionFour" ]; then
+    # If the 4th section is missing,
+    # then markup conversion is not required,
+    # there is no risk of data loss.
     PARTITION_TYPE=$(/sbin/parted --script "$DISK" print 2>/dev/null | /bin/busybox grep "Partition Table" | /bin/busybox awk '{print $3}');
     echo " - Performing an action for the $PARTITION_TYPE section";
     if [ "$PARTITION_TYPE" == "msdos" ]; then
@@ -138,7 +141,7 @@ if [ -r "${img_file}" ]; then
       	/sbin/resize2fs "$partitionFour" "$NEW_SIZE_MIB"M;
       fi
       echo " - Converting markup to GPT."
-      echo -e "w\nY\n" | /bin/gdisk "$DISK" > /dev/null 2>&1;
+      echo -e "w\nY\n" | /bin/gdisk "$DISK" > /dev/null;
       resultGDisk="$?";
       if [ "$resultGDisk" -eq 0 ]; then
         echo " - The conversion to GPT has been completed successfully."
@@ -157,13 +160,15 @@ if [ -r "${img_file}" ]; then
   fi
 
   echo " - Installing new image on $DISK"
-  # Use pv to monitor the progress of the data being piped to the dd command
   if test -w /dev/ttyS0 && ! /bin/busybox setserial -g /dev/ttyS0 | /bin/grep -q unknown; then
     /bin/pv -p "${img_file}" | /bin/gunzip | dd of="$DISK" bs=4M 2>&1 | /bin/busybox tee /dev/ttyS0 >/dev/null
   else
     /bin/pv -p "${img_file}" | /bin/gunzip | dd of="$DISK" bs=4M >/dev/null 2>&1;
   fi
   resultPv="$?";
+  echo " - result install code $resultPv";
+  /sbin/blockdev --rereadpt "$DISK" > /dev/null 2>&1;
+  sleep 3;
 
   # If the pv command fails or there aren't three primary partitions, restore the system image from the backup
   if [ ! "$resultPv" = '0' ] || [ ! "$(/bin/lsblk -l "$DISK" | /bin/busybox grep -c part)" = '4' ]; then
