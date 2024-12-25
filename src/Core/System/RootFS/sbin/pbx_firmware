@@ -186,7 +186,7 @@ if [ -r "${img_file}" ]; then
 
   # Update the partition table
   /sbin/initial_storage_part_four "$part4Action" "$DISK";
-  echo " - Check if it necessary to update 4-th storage partition. The result is ${?}...";
+  echo " - Check if it necessary to $part4Action 4-th storage partition. The result is ${?}...";
 fi
 
 # Reread the partition table of the system device
