@@ -548,12 +548,12 @@ class Storage extends Injectable
      */
     public static function isStorageDisk(string $device): bool
     {
-        $result = false;
         // Check if the device path exists
         if (!file_exists($device)) {
-            return $result;
+            echo("Disk $device not found") . PHP_EOL;
+            return false;
         }
-
+        $result = false;
         $tmp_dir = '/tmp/mnt_' . time();
         Util::mwMkdir($tmp_dir);
         $out = [];
@@ -562,18 +562,21 @@ class Storage extends Injectable
         $storage = new self();
         $format = $storage->getFsType($device);
         // If the file system type is not available, return false
-        if ($format === '') {
+        if (empty($format)) {
+            echo("For Disk $device ($uid_part), FS_TYPE empty...") . PHP_EOL;
             return false;
         }
-        $mount = Util::which('mount');
+        echo("For Disk $device get $uid_part, FS_TYPE=$format...") . PHP_EOL;
+        $mount  = Util::which('mount');
         $umount = Util::which('umount');
-        $rm = Util::which('rm');
+        $rm     = Util::which('rm');
 
         Processes::mwExec("$mount -t $format $uid_part $tmp_dir", $out);
         if (is_dir("$tmp_dir/mikopbx") && trim(implode('', $out)) === '') {
             // $out - empty string, no errors
             // mikopbx directory exists
             $result = true;
+            echo("Disk $device is storage...") . PHP_EOL;
         }
 
         // Check if the storage disk is mounted, and unmount if necessary
