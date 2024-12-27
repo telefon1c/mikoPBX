@@ -573,8 +573,6 @@ class Storage extends Injectable
 
         Processes::mwExec("$mount -t $format $uid_part $tmp_dir", $out);
         if (is_dir("$tmp_dir/mikopbx") && trim(implode('', $out)) === '') {
-            // $out - empty string, no errors
-            // mikopbx directory exists
             $result = true;
             echo("Disk $device is storage...") . PHP_EOL;
         }
@@ -698,6 +696,18 @@ class Storage extends Injectable
             $mount_point = "/storage/usbdisk{$disk['id']}";
             Util::mwMkdir($mount_point);
             SystemMessages::sysLogMsg(__METHOD__, "Create mount point: $conf");
+
+            $mountPath = Util::which('mount');
+            $resultMountCode = Processes::mwExec("$mountPath -t $formatFs $str_uid $mount_point", $out);
+            if($resultMountCode !== 0){
+                echo("Fail mount $dev whith $str_uid, FS_TYPE - $formatFs...") . PHP_EOL;
+                echo("Trying check device $dev ...") . PHP_EOL;
+                passthru("/sbin/fsck.$formatFs -y '$dev'");
+                echo("Trying mount device $dev ...") . PHP_EOL;
+                $resultMountCode = Processes::mwExec("$mountPath -t $formatFs $str_uid $mount_point", $out);
+                echo("Result mount code $resultMountCode ...") . PHP_EOL;
+            }
+
         }
 
         // Save the configuration to the fstab file

@@ -190,12 +190,12 @@ if [ "$resultParted" = "0" ];then
         "/sbin/fsck.${type}" -a "${partitionFour}" > /dev/null 2>&1;
         fsckResult="$?";
         if [ "$fsckResult" != "0" ]; then
-            echo " - ERROR: check fs on '${partitionFour}' type: '${type}' exit code '$?'"
+            echo " - ERROR: check fs on '${partitionFour}' type: '${type}' exit code '$fsckResult'"
         else
             echo " - check completed..."
         fi;
     else
-        echo " - ERROR: umount ${partitionFour} exit code $?"
+        echo " - ERROR: umount ${partitionFour} exit code $mountResult"
     fi;
 else
     echo " - partition №4 on ${dev} not found...";
