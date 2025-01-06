@@ -24,6 +24,7 @@ use MikoPBX\Common\Models\PbxSettings;
 use MikoPBX\Core\System\CloudProvisioning\AWSCloud;
 use MikoPBX\Core\System\CloudProvisioning\AzureCloud;
 use MikoPBX\Core\System\CloudProvisioning\CloudProvider;
+use MikoPBX\Core\System\CloudProvisioning\DigitalOceanCloud;
 use MikoPBX\Core\System\CloudProvisioning\GoogleCloud;
 use MikoPBX\Core\System\CloudProvisioning\VKCloud;
 use MikoPBX\Core\System\CloudProvisioning\YandexCloud;
@@ -55,7 +56,8 @@ class CloudProvisioning
             VKCloud::CloudID => new VKCloud(),
             GoogleCloud::CloudID => new GoogleCloud(),
             AzureCloud::CloudID => new AzureCloud(),
-            AWSCloud::CloudID => new AWSCloud()
+            AWSCloud::CloudID => new AWSCloud(),
+            DigitalOceanCloud::CloudID => new DigitalOceanCloud(),
         ];
 
         foreach ($providers as $cloudId => $provider) {
