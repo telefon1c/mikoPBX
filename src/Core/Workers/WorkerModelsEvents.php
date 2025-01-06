@@ -36,6 +36,7 @@ use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadCrondAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadDialplanAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadFail2BanConfAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadFeaturesAction;
+use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadFirewallAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadH323Action;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadHepAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadIAXAction;
@@ -65,10 +66,9 @@ use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadTimezoneAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadVoicemailAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadWorkerCallEventsAction;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\RestartPBXCoreAction;
+use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\ProcessCustomFiles;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\ProcessOtherModels;
 use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\ProcessPBXSettings;
-use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\Actions\ReloadFirewallAction;
-use MikoPBX\Core\Workers\Libs\WorkerModelsEvents\ProcessCustomFiles;
 use MikoPBX\Modules\Config\SystemConfigInterface;
 use Phalcon\Di\Di;
 use Pheanstalk\Contract\PheanstalkInterface;
@@ -85,6 +85,8 @@ ini_set('display_startup_errors', 1);
  */
 class WorkerModelsEvents extends WorkerBase
 {
+private const ACTION_TIMEOUT = 30;
+        private bool $isProcessing = false; // seconds
     private int $last_change;
 
     // Array of planned reload actions that need to be started
@@ -104,6 +106,28 @@ class WorkerModelsEvents extends WorkerBase
 
     private BeanstalkClient $beanstalkClient;
 
+    /**
+     * Invokes an action by publishing a job to the Beanstalk queue.
+     *
+     * @param string $action The action to invoke.
+     * @param array $parameters The parameters for the action.
+     * @param int $priority The priority of the job.
+     * @return void
+     */
+    public static function invokeAction(string $action, array $parameters = [], int $priority = 0): void
+    {
+        $di = Di::getDefault();
+        if (!$di) {
+            return;
+        }
+        /** @var BeanstalkClient $queue */
+        $queue = $di->getShared(BeanstalkConnectionModelsProvider::SERVICE_NAME);
+
+        // Prepare the job data
+        $jobData = json_encode(['source' => BeanstalkConnectionModelsProvider::SOURCE_INVOKE_ACTION, 'action' => $action, 'parameters' => $parameters, 'model' => '']);
+        // Publish the job to the Beanstalk queue
+        $queue->publish($jobData, self::class, $priority, PheanstalkInterface::DEFAULT_DELAY, 3600);
+    }
 
     /**
      * Starts the model events worker.
@@ -261,47 +285,58 @@ class WorkerModelsEvents extends WorkerBase
      */
     private function startReload(): void
     {
-        // Check if there aren't any planned reload actions
-        if (count($this->plannedReloadActions) === 0) {
-            SystemMessages::sysLogMsg(__METHOD__, "No planed actions for reload", LOG_DEBUG);
+        if ($this->isProcessing) {
             return;
         }
-
-        // Check if enough time has passed since the last change
-        if ((time() - $this->last_change) < $this->timeout) {
-            SystemMessages::sysLogMsg(__METHOD__, "Wait more time before starting the reload.", LOG_DEBUG);
-            return;
-        }
-
-        $executedActions = [];
-        // Process changes for each method in priority order
-        foreach ($this->reloadActions as $actionClassName) {
-            // Skip if there is no change for this method
-            if (!array_key_exists($actionClassName, $this->plannedReloadActions)) {
-                continue;
+        try {
+            $this->isProcessing = true;
+            // Check if there aren't any planned reload actions
+            if (count($this->plannedReloadActions) === 0) {
+                SystemMessages::sysLogMsg(__METHOD__, "No planed actions for reload", LOG_DEBUG);
+                return;
             }
-            // Call the method if it exists
-            try {
-                $parameters = $this->plannedReloadActions[$actionClassName]['parameters'];
-                $hashes = array_keys($parameters);
-                SystemMessages::sysLogMsg($actionClassName, "Start action for the next parameters hashes: " . PHP_EOL . json_encode($hashes, JSON_PRETTY_PRINT), LOG_DEBUG);
 
-                $actionObject = new $actionClassName();
-                $actionObject->execute($parameters);
-                $executedActions[] = $actionClassName;
-            } catch (Throwable $exception) {
-                CriticalErrorsHandler::handleExceptionWithSyslog($exception);
+            // Check if enough time has passed since the last change
+            if ((time() - $this->last_change) < $this->timeout) {
+                SystemMessages::sysLogMsg(__METHOD__, "Wait more time before starting the reload.", LOG_DEBUG);
+                return;
             }
-        }
-        if (count($executedActions) > 0) {
-            SystemMessages::sysLogMsg(__METHOD__, "Reload actions were executed in the next order: " . PHP_EOL . json_encode($executedActions, JSON_PRETTY_PRINT), LOG_DEBUG);
-        }
 
-        // Send information about models changes to additional modules bulky without any details
-        PBXConfModulesProvider::hookModulesMethod(SystemConfigInterface::MODELS_EVENT_NEED_RELOAD, [$this->plannedReloadActions]);
+            $executedActions = [];
+            // Process changes for each method in priority order
+            foreach ($this->reloadActions as $actionClassName) {
+                // Skip if there is no change for this method
+                if (!array_key_exists($actionClassName, $this->plannedReloadActions)) {
+                    continue;
+                }
+                // Call the method if it exists
+                try {
+                    // Set timeout for action execution
+                    set_time_limit(self::ACTION_TIMEOUT);
 
-        // Reset the modified tables array
-        $this->plannedReloadActions = [];
+                    $parameters = $this->plannedReloadActions[$actionClassName]['parameters'];
+                    $hashes = array_keys($parameters);
+                    SystemMessages::sysLogMsg($actionClassName, "Start action for the next parameters hashes: " . PHP_EOL . json_encode($hashes, JSON_PRETTY_PRINT), LOG_DEBUG);
+
+                    $actionObject = new $actionClassName();
+                    $actionObject->execute($parameters);
+                    $executedActions[] = $actionClassName;
+                } catch (Throwable $exception) {
+                    CriticalErrorsHandler::handleExceptionWithSyslog($exception);
+                }
+            }
+            if (count($executedActions) > 0) {
+                SystemMessages::sysLogMsg(__METHOD__, "Reload actions were executed in the next order: " . PHP_EOL . json_encode($executedActions, JSON_PRETTY_PRINT), LOG_DEBUG);
+            }
+
+            // Send information about models changes to additional modules bulky without any details
+            PBXConfModulesProvider::hookModulesMethod(SystemConfigInterface::MODELS_EVENT_NEED_RELOAD, [$this->plannedReloadActions]);
+
+            // Reset the modified tables array
+            $this->plannedReloadActions = [];
+        } finally {
+            $this->isProcessing = false;
+        }
     }
 
     /**
@@ -344,6 +379,39 @@ class WorkerModelsEvents extends WorkerBase
             $this->needRestart = true;
             CriticalErrorsHandler::handleExceptionWithSyslog($exception);
         }
+    }
+
+    /**
+     * Add new reload action with parameters to the planned reload actions array.
+     *
+     * @param string $action The name of the action to be executed.
+     * @param array $parameters The parameters to be passed to the action.
+     * @return void
+     */
+    private function planReloadAction(string $action, array $parameters = []): void
+    {
+        $newHash = $this->createUniqueKeyFromArray($parameters);
+        if (!array_key_exists($action, $this->plannedReloadActions)) {
+            $this->plannedReloadActions[$action]['parameters'][$newHash] = $parameters;
+            SystemMessages::sysLogMsg(__METHOD__, "New reload task $action planned with parameters (hash=$newHash):" . PHP_EOL . json_encode($parameters, JSON_PRETTY_PRINT), LOG_DEBUG);
+        } else {
+            foreach ($this->plannedReloadActions[$action]['parameters'] as $oldHash => $existParameters) {
+                if ($newHash === $oldHash) {
+                    return;
+                }
+                $this->plannedReloadActions[$action]['parameters'][$newHash] = $parameters;
+                SystemMessages::sysLogMsg(__METHOD__, "Existing reload task $action received a new parameters (hash=$newHash)" . PHP_EOL . json_encode($parameters, JSON_PRETTY_PRINT), LOG_DEBUG);
+            }
+        }
+    }
+
+    private function createUniqueKeyFromArray(array $array): string
+    {
+        // Convert the array to JSON string
+        $json = json_encode($array);
+
+        // Create an MD5 hash of the JSON string
+        return md5($json);
     }
 
     /**
@@ -403,25 +471,6 @@ class WorkerModelsEvents extends WorkerBase
     }
 
     /**
-     * Fills the modified tables array based on the models dependency table and the called class.
-     *
-     * @param string $modifiedModel The called model class.
-     * @param array $modelData Data received during model change.
-     * @return void
-     */
-    private function planReloadActionsForOtherModels(string $modifiedModel, array $modelData): void
-    {
-        foreach ($this->otherModelsDependencyTable as $dependencyData) {
-            if (!in_array($modifiedModel, $dependencyData['modelClasses'], true)) {
-                continue;
-            }
-            foreach ($dependencyData['actions'] as $action) {
-                $this->planReloadAction($action, $modelData);
-            }
-        }
-    }
-
-    /**
      * Fills the modified tables array based on the custom files data, the called class, and the record ID.
      *
      * @param string $modifiedModel The modified model class (Must be CustomFiles)
@@ -455,30 +504,6 @@ class WorkerModelsEvents extends WorkerBase
     }
 
     /**
-     * Add new reload action with parameters to the planned reload actions array.
-     *
-     * @param string $action The name of the action to be executed.
-     * @param array $parameters The parameters to be passed to the action.
-     * @return void
-     */
-    private function planReloadAction(string $action, array $parameters = []): void
-    {
-        $newHash = $this->createUniqueKeyFromArray($parameters);
-        if (!array_key_exists($action, $this->plannedReloadActions)) {
-            $this->plannedReloadActions[$action]['parameters'][$newHash] = $parameters;
-            SystemMessages::sysLogMsg(__METHOD__, "New reload task $action planned with parameters (hash=$newHash):" . PHP_EOL . json_encode($parameters, JSON_PRETTY_PRINT), LOG_DEBUG);
-        } else {
-            foreach ($this->plannedReloadActions[$action]['parameters'] as $oldHash => $existParameters) {
-                if ($newHash === $oldHash) {
-                    return;
-                }
-                $this->plannedReloadActions[$action]['parameters'][$newHash] = $parameters;
-                SystemMessages::sysLogMsg(__METHOD__, "Existing reload task $action received a new parameters (hash=$newHash)" . PHP_EOL . json_encode($parameters, JSON_PRETTY_PRINT), LOG_DEBUG);
-            }
-        }
-    }
-
-    /**
      * Fills the modified tables array based on the PBX settings data, the called class, and the record ID.
      *
      * @param string $modifiedModel The modified model class (Must be PbxSettings)
@@ -488,7 +513,7 @@ class WorkerModelsEvents extends WorkerBase
     private function planReloadActionsForPbxSettings(string $modifiedModel, array $modelData): void
     {
         // Check if the called class is not PbxSettings
-        if (PbxSettings::class !== $modifiedModel  || empty($modelData['recordId'])) {
+        if (PbxSettings::class !== $modifiedModel || empty($modelData['recordId'])) {
             return;
         }
 
@@ -520,26 +545,22 @@ class WorkerModelsEvents extends WorkerBase
     }
 
     /**
-     * Invokes an action by publishing a job to the Beanstalk queue.
+     * Fills the modified tables array based on the models dependency table and the called class.
      *
-     * @param string $action The action to invoke.
-     * @param array $parameters The parameters for the action.
-     * @param int $priority The priority of the job.
+     * @param string $modifiedModel The called model class.
+     * @param array $modelData Data received during model change.
      * @return void
      */
-    public static function invokeAction(string $action, array $parameters = [], int $priority = 0): void
+    private function planReloadActionsForOtherModels(string $modifiedModel, array $modelData): void
     {
-        $di = Di::getDefault();
-        if (!$di) {
-            return;
+        foreach ($this->otherModelsDependencyTable as $dependencyData) {
+            if (!in_array($modifiedModel, $dependencyData['modelClasses'], true)) {
+                continue;
+            }
+            foreach ($dependencyData['actions'] as $action) {
+                $this->planReloadAction($action, $modelData);
+            }
         }
-        /** @var BeanstalkClient $queue */
-        $queue = $di->getShared(BeanstalkConnectionModelsProvider::SERVICE_NAME);
-
-        // Prepare the job data
-        $jobData = json_encode(['source' => BeanstalkConnectionModelsProvider::SOURCE_INVOKE_ACTION, 'action' => $action, 'parameters' => $parameters, 'model' => '']);
-        // Publish the job to the Beanstalk queue
-        $queue->publish($jobData, self::class, $priority, PheanstalkInterface::DEFAULT_DELAY, 3600);
     }
 
     /**
@@ -551,18 +572,17 @@ class WorkerModelsEvents extends WorkerBase
      */
     public function pingCallBack(BeanstalkClient $message): void
     {
-        // Start the reload process if there are modified tables
-        $this->startReload();
-        $message->reply(json_encode($message->getBody() . ':pong'));
-    }
+        try {
+            // Reply immediately to keep connection alive
+            $message->reply(json_encode($message->getBody() . ':pong'));
 
-    private function createUniqueKeyFromArray(array $array): string
-    {
-        // Convert the array to JSON string
-        $json = json_encode($array);
-
-        // Create an MD5 hash of the JSON string
-        return md5($json);
+            // Then process reload if needed
+            if (!$this->isProcessing) {
+                $this->startReload();
+            }
+        } catch (Throwable $e) {
+            CriticalErrorsHandler::handleExceptionWithSyslog($e);
+        }
     }
 }
 

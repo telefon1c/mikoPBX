@@ -27,155 +27,334 @@ use MikoPBX\Core\System\SystemMessages;
 use MikoPBX\Core\System\Util;
 use Phalcon\Di\Injectable;
 use MikoPBX\Common\Library\Text;
+use RuntimeException;
 use Throwable;
 
 /**
- * Base class for workers. This class is responsible for basic worker management and
- * includes methods for handling signals, saving PID files, and managing worker processes.
+ * Base class for workers.
+ * Provides core functionality for process management, signal handling, and worker lifecycle.
  *
  * @package MikoPBX\Core\Workers
  */
 abstract class WorkerBase extends Injectable implements WorkerInterface
 {
     /**
-     * Maximum number of processes that can be created.
+     * Signals that should be handled by the worker
+     */
+    private const array MANAGED_SIGNALS = [
+        SIGUSR1,
+        SIGTERM,
+        SIGINT
+    ];
+    /**
+     * Worker state constants
+     */
+    protected const int STATE_STARTING = 1;
+    protected const int STATE_RUNNING = 2;
+    protected const int STATE_STOPPING = 3;
+    protected const int STATE_RESTARTING = 4;
+
+    /**
+     * Worker state constants with descriptions
+     */
+    protected const array WORKER_STATES = [
+        self::STATE_STARTING   => 'STARTING',
+        self::STATE_RUNNING    => 'RUNNING',
+        self::STATE_STOPPING   => 'STOPPING',
+        self::STATE_RESTARTING => 'RESTARTING'
+    ];
+
+    /**
+     * File system constants
+     */
+    private const string PID_FILE_DIR = '/var/run';
+    private const string PID_FILE_SUFFIX = '.pid';
+
+    /**
+     * Resource limits
+     */
+    private const string MEMORY_LIMIT = '256M';
+    private const int ERROR_REPORTING_LEVEL = E_ALL;
+
+    /**
+     * Log message format constants
+     */
+    private const string LOG_FORMAT_STATE = '[%s][%s->%s] %s (%.3fs, PID:%d)';
+    private const string LOG_FORMAT_SIGNAL = '[%s][%s] %s from %s (%.3fs, PID:%d)';
+    private const string LOG_FORMAT_NORMAL_SHUTDOWN = '[%s][RUNNING->SHUTDOWN] Clean exit from %s (%.3fs, PID:%d)';
+    private const string LOG_FORMAT_NORMAL_EXIT = '[%s] Successfully executed (%.3fs, PID:%d)';
+    private const string LOG_FORMAT_ERROR_SHUTDOWN = '[%s][SHUTDOWN-ERROR] %s from %s (%.3fs, PID:%d)';
+    private const string LOG_FORMAT_PING = '[%s][PING] %s from %s (%.3fs, PID:%d)';
+
+
+    private const string LOG_NAMESPACE_SEPARATOR = '\\';
+
+    /**
+     * Maximum number of processes that can be created
      *
      * @var int
      */
     public int $maxProc = 1;
 
     /**
-     * Instance of the Asterisk Manager.
+     * Instance of the Asterisk Manager
      *
      * @var AsteriskManager
      */
     protected AsteriskManager $am;
 
     /**
-     * Flag indicating whether the worker needs to be restarted.
+     * Flag indicating whether the worker needs to be restarted
      *
      * @var bool
      */
     protected bool $needRestart = false;
 
     /**
-     * Time the worker started.
+     * Time the worker started
      *
      * @var float
      */
     protected float $workerStartTime;
 
     /**
+     * Current state of the worker
+     *
+     * @var int
+     */
+    protected int $workerState = self::STATE_STARTING;
+
+    /**
      * Constructs a WorkerBase instance.
+     * Initializes signal handlers, sets up resource limits, and saves PID file.
      *
-     * It is declared as final to prevent overriding in child classes.
-     * Any additional initialization required in child classes should be done in the start() method.
-     *
-     * @return void
+     * @throws RuntimeException If critical initialization fails
      */
     final public function __construct()
     {
-        pcntl_async_signals(true);
-        pcntl_signal(
-            SIGUSR1,
-            [$this, 'signalHandler'],
-            true
-        );
-        register_shutdown_function([$this, 'shutdownHandler']);
-        $this->workerStartTime = floatval(microtime(true));
-        $this->savePidFile();
+        try {
+            $this->setResourceLimits();
+            $this->initializeSignalHandlers();
+            register_shutdown_function([$this, 'shutdownHandler']);
+
+            $this->workerStartTime = microtime(true);
+            $this->setWorkerState(self::STATE_STARTING);
+            $this->savePidFile();
+
+        } catch (Throwable $e) {
+            CriticalErrorsHandler::handleExceptionWithSyslog($e);
+            throw $e;
+        }
     }
 
     /**
-     * Save PID to a file.
+     * Sets resource limits for the worker process
+     */
+    protected function setResourceLimits(): void
+    {
+        ini_set('memory_limit', self::MEMORY_LIMIT);
+        error_reporting(self::ERROR_REPORTING_LEVEL);
+        ini_set('display_errors', '1');
+        set_time_limit(0);
+    }
+
+
+    /**
+     * Initializes signal handlers for the worker
+     */
+    private function initializeSignalHandlers(): void
+    {
+        pcntl_async_signals(true);
+        foreach (self::MANAGED_SIGNALS as $signal) {
+            pcntl_signal($signal, [$this, 'signalHandler'], true);
+        }
+    }
+
+    /**
+     * Updates worker state and logs the change
+     */
+    protected function setWorkerState(int $state): void
+    {
+        $oldState = $this->workerState ?? 'UNDEFINED';
+        $this->workerState = $state;
+
+        $workerName = basename(str_replace(self::LOG_NAMESPACE_SEPARATOR, '/', static::class));
+        $timeElapsed = round(microtime(true) - $this->workerStartTime, 3);
+        $namespacePath = implode('.', array_slice(explode(self::LOG_NAMESPACE_SEPARATOR, static::class), 0, -1));
+
+        SystemMessages::sysLogMsg(
+            static::class,
+            sprintf(
+                self::LOG_FORMAT_STATE,
+                $workerName,
+                self::WORKER_STATES[$oldState] ?? 'UNDEFINED',
+                self::WORKER_STATES[$state] ?? 'UNKNOWN',
+                $namespacePath,
+                $timeElapsed,
+                getmypid()
+            ),
+            LOG_DEBUG
+        );
+    }
+
+
+    /**
+     * Save PID to file(s) with error handling
      *
-     * @return void
+     * @throws RuntimeException If unable to write PID file
      */
     private function savePidFile(): void
     {
-        $activeProcesses = Processes::getPidOfProcess(static::class);
-        $processes = explode(' ', $activeProcesses);
-        if (count($processes) === 1) {
-            file_put_contents($this->getPidFile(), $activeProcesses);
-        } else {
-            $pidFilesDir = dirname($this->getPidFile());
-            $baseName = (string)pathinfo($this->getPidFile(), PATHINFO_BASENAME);
-            $pidFile = $pidFilesDir . '/' . $baseName;
-            // Delete old PID files
-            $rm = Util::which('rm');
-            Processes::mwExec("$rm -rf $pidFile*");
-            $i = 1;
-            foreach ($processes as $process) {
-                file_put_contents("$pidFile-$i.pid", $process);
-                $i++;
+        try {
+            $activeProcesses = Processes::getPidOfProcess(static::class);
+            $processes = array_filter(explode(' ', $activeProcesses));
+
+            if (count($processes) === 1) {
+                $this->saveSinglePidFile($activeProcesses);
+            } else {
+                $this->saveMultiplePidFiles($processes);
+            }
+        } catch (Throwable $e) {
+            SystemMessages::sysLogMsg(
+                static::class,
+                "Failed to save PID file: " . $e->getMessage(),
+                LOG_WARNING
+            );
+            throw new RuntimeException('PID file operation failed', 0, $e);
+        }
+    }
+
+    /**
+     * Saves a single PID to file
+     *
+     * @param string $pid Process ID to save
+     * @throws RuntimeException If write fails
+     */
+    private function saveSinglePidFile(string $pid): void
+    {
+        if (!file_put_contents($this->getPidFile(), $pid)) {
+            throw new RuntimeException('Could not write to PID file');
+        }
+    }
+
+    /**
+     * Saves multiple PIDs to separate files
+     *
+     * @param array $processes Array of process IDs
+     * @throws RuntimeException If write fails
+     */
+    private function saveMultiplePidFiles(array $processes): void
+    {
+        $pidFilesDir = dirname($this->getPidFile());
+        $baseName = (string)pathinfo($this->getPidFile(), PATHINFO_BASENAME);
+        $pidFile = $pidFilesDir . '/' . $baseName;
+
+        // Delete old PID files
+        $rm = Util::which('rm');
+        Processes::mwExec("$rm -rf $pidFile*");
+
+        foreach ($processes as $index => $process) {
+            $pidFilePath = sprintf("%s-%d%s", $pidFile, $index + 1, self::PID_FILE_SUFFIX);
+            if (!file_put_contents($pidFilePath, $process)) {
+                throw new RuntimeException("Could not write to PID file: $pidFilePath");
             }
         }
     }
 
     /**
-     * Generate the PID file path for the worker.
+     * Generate the PID file path for the worker
      *
-     * @return string The path to the PID file.
+     * @return string The path to the PID file
      */
     public function getPidFile(): string
     {
         $name = str_replace("\\", '-', static::class);
-
-        return "/var/run/$name.pid";
+        return self::PID_FILE_DIR . "/$name" . self::PID_FILE_SUFFIX;
     }
 
     /**
-     * Starts the worker.
+     * Starts the worker process
      *
-     * @param array $argv The command-line arguments passed to the worker.
-     * @param bool $setProcName Flag to set the process name. Default is true.
-     *
+     * @param array $argv Command-line arguments
+     * @param bool $setProcName Whether to set process name
      * @return void
      */
     public static function startWorker(array $argv, bool $setProcName = true): void
     {
-        // The action command parsed from command-line arguments
         $action = $argv[1] ?? '';
         if ($action === 'start') {
-
-            // Get the class name of the worker
             $workerClassname = static::class;
 
-            // Set process title if the flag is set to true
             if ($setProcName) {
                 cli_set_process_title($workerClassname);
             }
-            try {
-                // Create a new worker instance and start it
-                $worker = new $workerClassname();
-                $worker->start($argv);
-                SystemMessages::sysLogMsg($workerClassname, "Normal exit after start ended", LOG_DEBUG);
-            } catch (Throwable $e) {
-                // Handle exceptions, log error messages, and pause execution
-                CriticalErrorsHandler::handleExceptionWithSyslog($e);
 
-                // Pause execution for 1 second
+            try {
+                $worker = new $workerClassname();
+                $worker->setWorkerState(self::STATE_RUNNING);
+                $worker->start($argv);
+                $worker->logNormalExit();
+            } catch (Throwable $e) {
+                CriticalErrorsHandler::handleExceptionWithSyslog($e);
                 sleep(1);
             }
         }
     }
 
     /**
-     * Handles the received signal.
+     * Handles various signals received by the worker
      *
-     * @param int $signal The signal to handle.
-     *
+     * @param int $signal Signal number
      * @return void
      */
     public function signalHandler(int $signal): void
     {
-        $processTitle = cli_get_process_title();
-        SystemMessages::sysLogMsg($processTitle, "Receive signal to restart  " . $signal, LOG_DEBUG);
-        $this->needRestart = true;
+        $workerName = basename(str_replace(self::LOG_NAMESPACE_SEPARATOR, '/', static::class));
+        $timeElapsed = round(microtime(true) - $this->workerStartTime, 3);
+        $namespacePath = implode('.', array_slice(explode(self::LOG_NAMESPACE_SEPARATOR, static::class), 0, -1));
+
+        $signalNames = [
+            SIGUSR1 => 'SIGUSR1',
+            SIGTERM => 'SIGTERM',
+            SIGINT  => 'SIGINT'
+        ];
+
+        SystemMessages::sysLogMsg(
+            static::class,
+            sprintf(
+                self::LOG_FORMAT_SIGNAL,
+                $workerName,
+                $signalNames[$signal] ?? "SIG_$signal",
+                'received',
+                $namespacePath,
+                $timeElapsed,
+                getmypid()
+            ),
+            LOG_DEBUG
+        );
+
+        switch ($signal) {
+            case SIGUSR1:
+                $this->setWorkerState(self::STATE_RESTARTING);
+                $this->needRestart = true;
+                break;
+            case SIGTERM:
+            case SIGINT:
+                $this->setWorkerState(self::STATE_STOPPING);
+                exit(0);
+            default:
+                // Log unhandled signal
+                SystemMessages::sysLogMsg(
+                    $workerName,
+                    sprintf("Unhandled signal received: %d", $signal),
+                    LOG_WARNING
+                );
+        }
     }
 
+
     /**
-     * Handles the shutdown event.
+     * Handles the shutdown event of the worker
      *
      * @return void
      */
@@ -183,62 +362,179 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
     {
         $timeElapsedSecs = round(microtime(true) - $this->workerStartTime, 2);
         $processTitle = cli_get_process_title();
-        $e = error_get_last();
-        if ($e === null) {
-            SystemMessages::sysLogMsg($processTitle, "shutdownHandler after $timeElapsedSecs seconds", LOG_DEBUG);
+
+        $error = error_get_last();
+        if ($error === null) {
+            $this->logNormalShutdown($processTitle, $timeElapsedSecs);
         } else {
-            $details = implode(PHP_EOL,$e);
+            $this->logErrorShutdown($processTitle, $timeElapsedSecs, $error);
+        }
+
+        $this->cleanupPidFile();
+    }
+
+    /**
+     * Logs normal shutdown event
+     *
+     * @param string $processTitle Process title
+     * @param float $timeElapsedSecs Time elapsed since start
+     */
+    private function logNormalShutdown(string $processTitle, float $timeElapsedSecs): void
+    {
+        $workerName = basename(str_replace(self::LOG_NAMESPACE_SEPARATOR, '/', static::class));
+        $namespacePath = implode('.', array_slice(explode(self::LOG_NAMESPACE_SEPARATOR, static::class), 0, -1));
+
+        SystemMessages::sysLogMsg(
+            $processTitle,
+            sprintf(
+                self::LOG_FORMAT_NORMAL_SHUTDOWN,
+                $workerName,
+                $namespacePath,
+                $timeElapsedSecs,
+                getmypid()
+            ),
+            LOG_DEBUG
+        );
+    }
+
+    /**
+     * Logs error shutdown event
+     *
+     * @param string $processTitle Process title
+     * @param float $timeElapsedSecs Time elapsed since start
+     * @param array $error Error details
+     */
+    private function logErrorShutdown(string $processTitle, float $timeElapsedSecs, array $error): void
+    {
+        $workerName = basename(str_replace(self::LOG_NAMESPACE_SEPARATOR, '/', static::class));
+        $namespacePath = implode('.', array_slice(explode(self::LOG_NAMESPACE_SEPARATOR, static::class), 0, -1));
+        $errorMessage = $error['message'] ?? 'Unknown error';
+
+        SystemMessages::sysLogMsg(
+            $processTitle,
+            sprintf(
+                self::LOG_FORMAT_ERROR_SHUTDOWN,
+                $workerName,
+                $errorMessage,
+                $namespacePath,
+                $timeElapsedSecs,
+                getmypid()
+            ),
+            LOG_ERR
+        );
+    }
+
+    /**
+     * Cleans up PID file during shutdown
+     */
+    private function cleanupPidFile(): void
+    {
+        try {
+            $pidFile = $this->getPidFile();
+            if (file_exists($pidFile)) {
+                unlink($pidFile);
+            }
+        } catch (Throwable $e) {
             SystemMessages::sysLogMsg(
-                $processTitle,
-                "shutdownHandler after $timeElapsedSecs seconds with error: $details",
-                LOG_DEBUG
+                static::class,
+                "Failed to cleanup PID file: " . $e->getMessage(),
+                LOG_WARNING
             );
         }
     }
 
     /**
-     * Callback for the ping to keep the connection alive.
+     * Handles ping callback to keep connection alive
      *
-     * @param BeanstalkClient $message The received message.
-     *
+     * @param BeanstalkClient $message Received message
      * @return void
      */
     public function pingCallBack(BeanstalkClient $message): void
     {
-        $processTitle = cli_get_process_title();
-        SystemMessages::sysLogMsg(
-            $processTitle,
-            "pingCallBack on ".__CLASS__." with message: ".json_encode($message->getBody()),
-            LOG_DEBUG
-        );
-        $message->reply(json_encode($message->getBody() . ':pong'));
+        try {
+            $workerName = basename(str_replace(self::LOG_NAMESPACE_SEPARATOR, '/', static::class));
+            $namespacePath = implode('.', array_slice(explode(self::LOG_NAMESPACE_SEPARATOR, static::class), 0, -1));
+            $timeElapsed = round(microtime(true) - $this->workerStartTime, 3);
+
+            SystemMessages::sysLogMsg(
+                cli_get_process_title(),
+                sprintf(
+                    self::LOG_FORMAT_PING,
+                    $workerName,
+                    substr(json_encode($message->getBody()), 0, 50),  // Truncate long messages
+                    $namespacePath,
+                    $timeElapsed,
+                    getmypid()
+                ),
+                LOG_DEBUG
+            );
+
+            $message->reply(json_encode($message->getBody() . ':pong', JSON_THROW_ON_ERROR));
+        } catch (Throwable $e) {
+            SystemMessages::sysLogMsg(
+                static::class,
+                sprintf(
+                    '[%s][PING-ERROR] %s from %s (%.3fs, PID:%d)',
+                    $workerName,
+                    $e->getMessage(),
+                    $namespacePath,
+                    $timeElapsed,
+                    getmypid()
+                ),
+                LOG_WARNING
+            );
+        }
     }
 
     /**
-     * Replies to a ping request from the worker.
+     * Logs normal exit after operation
+     */
+    private function logNormalExit(): void
+    {
+        $workerName = basename(str_replace(self::LOG_NAMESPACE_SEPARATOR, '/', static::class));
+        $timeElapsed = round(microtime(true) - $this->workerStartTime, 3);
+
+        SystemMessages::sysLogMsg(
+            static::class,
+            sprintf(
+                self::LOG_FORMAT_NORMAL_EXIT,
+                $workerName,
+                $timeElapsed,
+                getmypid()
+            ),
+            LOG_DEBUG
+        );
+    }
+
+    /**
+     * Replies to a ping request from the worker
      *
-     * @param array $parameters The parameters of the request.
-     *
-     * @return bool True if the ping request was processed, false otherwise.
+     * @param array $parameters Request parameters
+     * @return bool True if ping request was processed
      */
     public function replyOnPingRequest(array $parameters): bool
     {
-        $pingTube = $this->makePingTubeName(static::class);
-        if ($pingTube === $parameters['UserEvent']) {
-            $this->am->UserEvent("{$pingTube}Pong", []);
-
-            return true;
+        try {
+            $pingTube = $this->makePingTubeName(static::class);
+            if ($pingTube === $parameters['UserEvent']) {
+                $this->am->UserEvent("{$pingTube}Pong", []);
+                return true;
+            }
+        } catch (Throwable $e) {
+            SystemMessages::sysLogMsg(
+                static::class,
+                "Ping reply failed: " . $e->getMessage(),
+                LOG_WARNING
+            );
         }
-
         return false;
     }
 
     /**
-     * Generates the name for the ping tube based on the class name.
+     * Generates the ping tube name for a worker class
      *
-     * @param string $workerClassName The class name of the worker.
-     *
-     * @return string The generated ping tube name.
+     * @param string $workerClassName Worker class name
+     * @return string Generated ping tube name
      */
     public function makePingTubeName(string $workerClassName): string
     {
@@ -246,12 +542,20 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
     }
 
     /**
-     * The destructor for the WorkerBase class.
-     *
-     * @return void
+     * Destructor - ensures PID file is saved on object destruction
      */
     public function __destruct()
     {
-        $this->savePidFile();
+        try {
+            if ($this->workerState !== self::STATE_STOPPING) {
+                $this->savePidFile();
+            }
+        } catch (Throwable $e) {
+            SystemMessages::sysLogMsg(
+                static::class,
+                "Destructor failed: " . $e->getMessage(),
+                LOG_WARNING
+            );
+        }
     }
 }

@@ -38,153 +38,412 @@ use MikoPBX\Core\Workers\WorkerPrepareAdvice;
 use MikoPBX\Core\Workers\WorkerRemoveOldRecords;
 use MikoPBX\Modules\Config\SystemConfigInterface;
 use MikoPBX\PBXCoreREST\Workers\WorkerApiCommands;
+use RuntimeException;
 use Throwable;
 
 /**
  * Class WorkerSafeScriptsCore
  *
- * Represents the core worker for safe scripts.
+ * Core worker class responsible for managing and monitoring other worker processes.
+ * Handles process startup, monitoring, and restart operations with safety mechanisms.
  *
  * @package MikoPBX\Core\Workers\Cron
  */
 class WorkerSafeScriptsCore extends WorkerBase
 {
-    // Constants to denote the methods of checking workers' statuses.
+    /**
+     * Worker check types - defines how each worker type should be monitored
+     */
     public const string CHECK_BY_BEANSTALK = 'checkWorkerBeanstalk';
-
     public const string CHECK_BY_AMI = 'checkWorkerAMI';
     public const string CHECK_BY_PID_NOT_ALERT = 'checkPidNotAlert';
 
+
     /**
-     * Restarts all registered workers.
+     * Configuration constants
+     */
+    private const int MAX_WORKER_START_TIME = 30; // Maximum time in seconds for worker startup
+    private const int BATCH_SIZE = 5; // Number of workers to process in one batch
+    private const int CHECK_INTERVAL_MS = 100000; // Sleep interval between checks (100ms)
+    private const int MAX_AMI_RETRIES = 10; // Maximum retries for AMI operations
+    private const int WORKER_TIMEOUT_SECONDS = 10; // Timeout for individual worker operations
+    private const string LOCK_FILE_DIR = '/var/run/'; // Directory for process lock files
+
+    /**
+     * Sets up signal handlers for timeout management
+     */
+    private function setupSignalHandlers(): void
+    {
+        pcntl_signal(SIGALRM, function () {
+            SystemMessages::sysLogMsg(__CLASS__, "Operation timeout exceeded", LOG_WARNING);
+            exit(1);
+        });
+        pcntl_signal_dispatch();
+    }
+
+    /**
+     * Resets signal handlers to their default state
+     */
+    private function resetSignalHandlers(): void
+    {
+        pcntl_alarm(0);
+        pcntl_signal(SIGALRM, SIG_DFL);
+    }
+
+    /**
+     * Logs slow operations that exceed the timeout threshold
      *
-     * @throws Throwable
+     * @param string $workerClassName Name of the worker class being monitored
+     * @param float $startTime Start time of the operation
+     */
+    private function logSlowOperation(string $workerClassName, float $startTime): void
+    {
+        $timeElapsedSecs = round(microtime(true) - $startTime, 2);
+        if ($timeElapsedSecs > self::WORKER_TIMEOUT_SECONDS) {
+            SystemMessages::sysLogMsg(
+                __METHOD__,
+                "WARNING: Service $workerClassName processed more than $timeElapsedSecs seconds"
+            );
+        }
+    }
+
+    /**
+     * Restarts all registered workers with timeout control and process management.
+     * Uses locking mechanism to prevent concurrent restart operations.
+     * Processes workers in batches to avoid system overload.
+     *
+     * @throws RuntimeException If unable to fork or terminate child processes
+     * @throws Throwable From worker restart operations
+     * @return void
      */
     public function restart(): void
     {
-        // Prepare the list of workers to be restarted.
-        $arrWorkers = $this->prepareWorkersList();
+        $this->setupSignalHandlers();
 
-        // Asynchronously restart all workers using pcntl_fork.
-        foreach ($arrWorkers as $workersWithCurrentType) {
-            foreach ($workersWithCurrentType as $worker) {
-                $pid = pcntl_fork();
-                if ($pid == -1) {
-                    // Error during fork.
-                    throw new \RuntimeException("Failed to fork process");
-                } elseif ($pid == 0) {
-                    // Child process.
-                    try {
-                        $this->restartWorker($worker);
-                    } catch (Throwable $e) {
-                        CriticalErrorsHandler::handleExceptionWithSyslog($e);
-                    }
-                    exit(0); // Exit the child process.
-                }
-                // Parent process continues the loop.
-            }
+        // Acquire lock for restart operation
+        $lockFile = $this->acquireLock('restart');
+        if ($lockFile === null) {
+            SystemMessages::sysLogMsg(__CLASS__, "Another restart operation is already running", LOG_WARNING);
+            return;
         }
 
-        // Optionally, wait for all child processes to finish.
-        while (pcntl_waitpid(0, $status) != -1) {
-            // You can process the status if needed.
+        try {
+            // Prepare the list of workers to be restarted
+            $arrWorkers = $this->prepareWorkersList();
+            $totalWorkers = 0;
+            foreach ($arrWorkers as $workers) {
+                $totalWorkers += count($workers);
+            }
+
+            SystemMessages::sysLogMsg(
+                __CLASS__,
+                "Starting restart operation for {$totalWorkers} workers",
+                LOG_INFO
+            );
+
+            $childPids = [];
+            $currentBatch = [];
+
+            // Set alarm for overall timeout
+            pcntl_alarm(self::MAX_WORKER_START_TIME);
+
+            // Process workers in batches
+            foreach ($arrWorkers as $workersWithCurrentType) {
+                foreach ($workersWithCurrentType as $worker) {
+                    $currentBatch[] = $worker;
+
+                    if (count($currentBatch) >= self::BATCH_SIZE) {
+                        $this->processBatch($currentBatch, $childPids);
+                        $currentBatch = [];
+                    }
+                }
+            }
+
+            // Process any remaining workers
+            if (!empty($currentBatch)) {
+                $this->processBatch($currentBatch, $childPids);
+            }
+
+            // Wait for all children to complete
+            $successCount = $this->waitForChildren($childPids);
+
+            SystemMessages::sysLogMsg(
+                __CLASS__,
+                "Restart operation completed. Successfully restarted {$successCount} of {$totalWorkers} workers",
+                LOG_INFO
+            );
+
+        } catch (Throwable $e) {
+            SystemMessages::sysLogMsg(
+                __CLASS__,
+                "Restart operation failed: " . $e->getMessage(),
+                LOG_ERR
+            );
+            CriticalErrorsHandler::handleExceptionWithSyslog($e);
+            throw $e;
+        } finally {
+            // Clean up resources
+            if (file_exists($lockFile)) {
+                unlink($lockFile);
+            }
+            $this->resetSignalHandlers();
+        }
+    }
+
+    /**
+     * Starts or checks all workers.
+     * Implements batch processing and timeout control similar to restart operation.
+     *
+     * @param array $argv Command-line arguments passed to the worker
+     * @throws Throwable From worker operations
+     * @return void
+     */
+    public function start(array $argv): void
+    {
+        $this->setupSignalHandlers();
+        $lockFile = $this->acquireLock('start');
+        if ($lockFile === null) {
+            SystemMessages::sysLogMsg(__CLASS__, "Another instance is already running", LOG_WARNING);
+            return;
+        }
+
+        try {
+            // Wait for system to be fully booted
+            PBX::waitFullyBooted();
+
+            $arrWorkers = $this->prepareWorkersList();
+            $childPids = [];
+            $currentBatch = [];
+
+            pcntl_alarm(self::MAX_WORKER_START_TIME);
+
+            // Process workers in batches by type
+            foreach ($arrWorkers as $workerType => $workers) {
+                foreach ($workers as $worker) {
+                    $currentBatch[] = ['type' => $workerType, 'worker' => $worker];
+                    if (count($currentBatch) >= self::BATCH_SIZE) {
+                        $this->processStartBatch($currentBatch, $childPids);
+                        $currentBatch = [];
+                    }
+                }
+            }
+
+            // Process remaining workers
+            if (!empty($currentBatch)) {
+                $this->processStartBatch($currentBatch, $childPids);
+            }
+
+            $this->waitForChildren($childPids);
+
+        } catch (Throwable $e) {
+            CriticalErrorsHandler::handleExceptionWithSyslog($e);
+            throw $e;
+        } finally {
+            if (file_exists($lockFile)) {
+                unlink($lockFile);
+            }
+            $this->resetSignalHandlers();
+        }
+    }
+
+    /**
+     * Processes a batch of workers for starting operation.
+     *
+     * @param array $batch Array of worker configurations to process
+     * @param array $childPids Reference to array storing child PIDs
+     * @throws RuntimeException If fork fails
+     */
+    private function processStartBatch(array $batch, array &$childPids): void
+    {
+        foreach ($batch as $workerConfig) {
+            $pid = pcntl_fork();
+            if ($pid === -1) {
+                throw new RuntimeException("Failed to fork process for worker: {$workerConfig['worker']}");
+            }
+            if ($pid === 0) {
+                // Child process
+                try {
+                    $this->checkWorkerByType($workerConfig['type'], $workerConfig['worker']);
+                    exit(0);
+                } catch (Throwable $e) {
+                    CriticalErrorsHandler::handleExceptionWithSyslog($e);
+                    exit(1);
+                }
+            }
+            // Parent process - store child PID
+            $childPids[] = $pid;
+        }
+    }
+    /**
+     * Processes a batch of workers for restart operation.
+     *
+     * @param array $batch Array of worker class names to restart
+     * @param array $childPids Reference to array storing child PIDs
+     * @throws RuntimeException If fork fails
+     */
+    private function processBatch(array $batch, array &$childPids): void
+    {
+        foreach ($batch as $worker) {
+            $pid = pcntl_fork();
+            if ($pid === -1) {
+                throw new RuntimeException("Failed to fork process for worker: $worker");
+            }
+            if ($pid === 0) {
+                // Child process
+                try {
+                    SystemMessages::sysLogMsg(
+                        __CLASS__,
+                        "Restarting worker: $worker",
+                        LOG_DEBUG
+                    );
+                    $this->restartWorker($worker);
+                    exit(0);
+                } catch (Throwable $e) {
+                    CriticalErrorsHandler::handleExceptionWithSyslog($e);
+                    exit(1);
+                }
+            }
+            // Parent process - store child PID
+            $childPids[] = $pid;
         }
     }
 
     /**
      * Prepares the list of workers to start and restart.
-     * Collects core and module workers.
+     * Collects both core workers and module workers.
      *
-     * @return array The prepared workers list.
+     * @return array Associative array of workers grouped by check type
      */
     private function prepareWorkersList(): array
     {
-        // Initialize the workers' list.
-        // Each worker type corresponds to a list of workers.
+        // Initialize the workers' list with core workers
         $arrWorkers = [
-            self::CHECK_BY_AMI =>
-                [
-                ],
-            self::CHECK_BY_BEANSTALK =>
-                [
-                    WorkerApiCommands::class,
-                    WorkerCdr::class,
-                    WorkerCallEvents::class,
-                    WorkerModelsEvents::class,
-                    WorkerNotifyByEmail::class,
-                    WorkerNotifyError::class,
-                ],
-            self::CHECK_BY_PID_NOT_ALERT =>
-                [
-                    WorkerMarketplaceChecker::class,
-                    WorkerBeanstalkdTidyUp::class,
-                    WorkerCheckFail2BanAlive::class,
-                    WorkerLogRotate::class,
-                    WorkerRemoveOldRecords::class,
-                    WorkerPrepareAdvice::class
-                ],
+            self::CHECK_BY_AMI => [],
+            self::CHECK_BY_BEANSTALK => [
+                WorkerApiCommands::class,
+                WorkerCdr::class,
+                WorkerCallEvents::class,
+                WorkerModelsEvents::class,
+                WorkerNotifyByEmail::class,
+                WorkerNotifyError::class,
+            ],
+            self::CHECK_BY_PID_NOT_ALERT => [
+                WorkerMarketplaceChecker::class,
+                WorkerBeanstalkdTidyUp::class,
+                WorkerCheckFail2BanAlive::class,
+                WorkerLogRotate::class,
+                WorkerRemoveOldRecords::class,
+                WorkerPrepareAdvice::class
+            ],
         ];
 
-        // Get the list of module workers.
+        // Get and merge module workers
         $arrModulesWorkers = PBXConfModulesProvider::hookModulesMethod(SystemConfigInterface::GET_MODULE_WORKERS);
         $arrModulesWorkers = array_merge(...array_values($arrModulesWorkers));
 
-        // If there are module workers, add them to the workers' list.
+        // Add module workers to appropriate check types
         if (!empty($arrModulesWorkers)) {
             foreach ($arrModulesWorkers as $moduleWorker) {
                 $arrWorkers[$moduleWorker['type']][] = $moduleWorker['worker'];
             }
         }
 
-        // Return the prepared workers' list.
         return $arrWorkers;
     }
 
     /**
-     * Starts or checks all workers.
+     * Acquires a lock for the worker process.
+     * Prevents multiple instances of the same operation from running simultaneously.
      *
-     * @param array $argv The command-line arguments passed to the worker.
-     *
-     * @throws Throwable
+     * @param string $operation The operation name ('start' or 'restart')
+     * @return string|null Path to the lock file if lock was acquired, null otherwise
      */
-    public function start(array $argv): void
+    private function acquireLock(string $operation): ?string
     {
-        // Wait for the system to fully boot.
-        PBX::waitFullyBooted();
+        $lockFile = self::LOCK_FILE_DIR . "worker_safe_scripts_{$operation}.lock";
+        $fp = fopen($lockFile, 'w+');
 
-        // Prepare the list of workers to be started.
-        $arrWorkers = $this->prepareWorkersList();
+        if (!$fp || !flock($fp, LOCK_EX | LOCK_NB)) {
+            return null;
+        }
 
-        // Asynchronously start or check all workers using pcntl_fork.
-        foreach ($arrWorkers as $workerType => $workersWithCurrentType) {
-            foreach ($workersWithCurrentType as $worker) {
-                $pid = pcntl_fork();
-                if ($pid == -1) {
-                    // Error during fork.
-                    throw new \RuntimeException("Failed to fork process");
-                } elseif ($pid == 0) {
-                    // Child process.
-                    try {
-                        if ($workerType === self::CHECK_BY_BEANSTALK) {
-                            $this->checkWorkerBeanstalk($worker);
-                        } elseif ($workerType === self::CHECK_BY_PID_NOT_ALERT) {
-                            $this->checkPidNotAlert($worker);
-                        } elseif ($workerType === self::CHECK_BY_AMI) {
-                            $this->checkWorkerAMI($worker);
-                        }
-                    } catch (Throwable $e) {
-                        CriticalErrorsHandler::handleExceptionWithSyslog($e);
+        return $lockFile;
+    }
+
+    /**
+     * Routes worker check to appropriate method based on worker type.
+     *
+     * @param string $type Type of check to perform
+     * @param string $worker Worker class name to check
+     */
+    private function checkWorkerByType(string $type, string $worker): void
+    {
+        switch ($type) {
+            case self::CHECK_BY_BEANSTALK:
+                $this->checkWorkerBeanstalk($worker);
+                break;
+            case self::CHECK_BY_PID_NOT_ALERT:
+                $this->checkPidNotAlert($worker);
+                break;
+            case self::CHECK_BY_AMI:
+                $this->checkWorkerAMI($worker);
+                break;
+        }
+    }
+
+    /**
+     * Restarts a specific worker by class name.
+     *
+     * @param string $workerClassName The class name of the worker to restart
+     */
+    public function restartWorker(string $workerClassName): void
+    {
+        Processes::processPHPWorker($workerClassName, 'start', 'restart');
+    }
+
+
+    /**
+     * Waits for child processes to complete with timeout control.
+     *
+     * @param array $pids Array of process IDs to wait for
+     * @return int Number of successfully completed processes
+     */
+    private function waitForChildren(array $pids): int
+    {
+        $successCount = 0;
+        $timeout = time() + self::MAX_WORKER_START_TIME;
+        $remainingPids = $pids;
+
+        while (!empty($remainingPids) && time() < $timeout) {
+            foreach ($remainingPids as $i => $pid) {
+                $res = pcntl_waitpid($pid, $status, WNOHANG);
+                if ($res === $pid) {
+                    // Process completed
+                    unset($remainingPids[$i]);
+                    if (pcntl_wifexited($status) && pcntl_wexitstatus($status) === 0) {
+                        $successCount++;
                     }
-                    exit(0); // Exit the child process.
+                } elseif ($res === -1) {
+                    // Error or process doesn't exist
+                    unset($remainingPids[$i]);
                 }
-                // Parent process continues the loop.
+            }
+            if (!empty($remainingPids)) {
+                usleep(self::CHECK_INTERVAL_MS);
             }
         }
 
-        // Optionally, wait for all child processes to finish.
-        while (pcntl_waitpid(0, $status) != -1) {
-            // You can process the status if needed.
+        // Kill remaining processes that exceeded timeout
+        foreach ($remainingPids as $pid) {
+            SystemMessages::sysLogMsg(
+                __CLASS__,
+                "Worker process $pid exceeded timeout, terminating",
+                LOG_WARNING
+            );
+            posix_kill($pid, SIGTERM);
         }
+
+        return $successCount;
     }
 
     /**
@@ -254,55 +513,38 @@ class WorkerSafeScriptsCore extends WorkerBase
      * Uses AMI UserEvent to send ping and check workers.
      *
      * @param string $workerClassName The class name of the worker.
-     * @param int $level The recursion level.
      *
      * @return void
      */
-    public function checkWorkerAMI(string $workerClassName, int $level = 0): void
+    public function checkWorkerAMI(string $workerClassName): void
     {
-        // Check if the worker is alive. If not, restart it.
-        // The check is done by pinging the worker using an AMI UserEvent.
-        try {
-            $start = microtime(true);
-            $res_ping = false;
-            $WorkerPID = Processes::getPidOfProcess($workerClassName);
-            if ($WorkerPID !== '') {
-                // Ping the worker via AMI.
-                $am = Util::getAstManager();
-                $res_ping = $am->pingAMIListener($this->makePingTubeName($workerClassName));
-                if (false === $res_ping) {
-                    SystemMessages::sysLogMsg(__METHOD__, 'Restarting...', LOG_ERR);
+        $start = microtime(true);
+        $attempts = 0;
+
+        while ($attempts < self::MAX_AMI_RETRIES) {
+            try {
+                $WorkerPID = Processes::getPidOfProcess($workerClassName);
+                if ($WorkerPID === '') {
+                    break;
                 }
-            }
 
-            if ($res_ping === false && $level < 10) {
+                $am = Util::getAstManager();
+                if ($am->pingAMIListener($this->makePingTubeName($workerClassName))) {
+                    return;
+                }
+
+                SystemMessages::sysLogMsg(__METHOD__, 'Restarting...', LOG_ERR);
                 Processes::processPHPWorker($workerClassName);
-                SystemMessages::sysLogMsg(__METHOD__, "Service $workerClassName started.", LOG_NOTICE);
-                sleep(1); // Wait 1 second while the service becomes ready to receive requests.
+                sleep(1);
+                $attempts++;
 
-                // Recheck the service.
-                $this->checkWorkerAMI($workerClassName, $level + 1);
+            } catch (Throwable $e) {
+                CriticalErrorsHandler::handleExceptionWithSyslog($e);
+                break;
             }
-            $timeElapsedSecs = round(microtime(true) - $start, 2);
-            if ($timeElapsedSecs > 10) {
-                SystemMessages::sysLogMsg(
-                    __METHOD__,
-                    "WARNING: Service $workerClassName processed more than $timeElapsedSecs seconds"
-                );
-            }
-        } catch (Throwable $e) {
-            CriticalErrorsHandler::handleExceptionWithSyslog($e);
         }
-    }
 
-    /**
-     * Restarts a worker by class name.
-     *
-     * @param string $workerClassName The class name of the worker.
-     */
-    public function restartWorker(string $workerClassName): void
-    {
-        Processes::processPHPWorker($workerClassName, 'start', 'restart');
+        $this->logSlowOperation($workerClassName, $start);
     }
 }
 
