@@ -177,6 +177,7 @@ class MessagesProvider implements ServiceProviderInterface
             'ex_Thai' => 'ไทย',
             'ex_Finnish' => 'Suomi',
             'ex_Hungarian' => 'Magyar',
+            'ex_Croatian' => 'Hrvatski',
         ];
     }
 }
