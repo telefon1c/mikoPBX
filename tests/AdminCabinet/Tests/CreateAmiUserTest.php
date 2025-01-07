@@ -21,7 +21,6 @@
 namespace MikoPBX\Tests\AdminCabinet\Tests;
 
 use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
-use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
 use MikoPBX\Tests\AdminCabinet\Tests\Traits\AmiPermissionsTrait;
 use Facebook\WebDriver\WebDriverBy;
 
@@ -30,21 +29,12 @@ use Facebook\WebDriver\WebDriverBy;
  */
 abstract class CreateAmiUserTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
     use AmiPermissionsTrait;
-
-    private static bool $isLoggedIn = false;
     private static bool $isTableCleared = false;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
 
         if (!self::$isTableCleared) {
             $this->clearAmiUsersTable();

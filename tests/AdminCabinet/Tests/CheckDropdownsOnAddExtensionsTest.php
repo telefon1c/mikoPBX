@@ -31,9 +31,6 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
  */
 class CheckDropdownsOnAddExtensionsTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
-
-    private static bool $isLoggedIn = false;
     private array $employeeData;
 
     /**
@@ -54,13 +51,6 @@ class CheckDropdownsOnAddExtensionsTest extends MikoPBXTestsBase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $this->employeeData = EmployeeDataFactory::getEmployeeData('nikita.telegrafov');
         $this->setSessionName("Test: Check extension selection dropdown menus");
     }

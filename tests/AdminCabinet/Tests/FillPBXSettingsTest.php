@@ -13,21 +13,11 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\TabNavigationTrait;
  */
 class FillPBXSettingsTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
     use TabNavigationTrait;
-
-    private static bool $isLoggedIn = false;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $this->setSessionName("Test: Fill general settings");
     }
 

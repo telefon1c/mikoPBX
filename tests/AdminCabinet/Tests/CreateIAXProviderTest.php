@@ -12,18 +12,9 @@ abstract class CreateIAXProviderTest extends MikoPBXTestsBase
 {
     use LoginTrait;
 
-    private static bool $isLoggedIn = false;
-
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $this->setSessionName("Test: Create IAX provider - " . $this->getIAXProviderData()['description']);
     }
 

@@ -51,9 +51,6 @@ class ChangeExtensionsSettingsTest extends MikoPBXTestsBase
     /**
      * Test changing extension settings.
      *
-     * @depends testLogin
-     *
-     * @param array $params The parameters for the test case.
      */
     public function testChangeExtension(): void
     {
@@ -83,8 +80,6 @@ class ChangeExtensionsSettingsTest extends MikoPBXTestsBase
      * Test changing mobile settings for an extension.
      *
      * @depends testChangeExtension
-     *
-     * @param array $params The parameters for the test case.
      */
     public function testChangeMobile(): void
     {
@@ -193,7 +188,6 @@ class ChangeExtensionsSettingsTest extends MikoPBXTestsBase
      * Test clearing email settings for an extension.
      *
      * @depends testChangeEmail
-     * @param array $params The parameters for the test case.
      */
     public function testClearEmail(): void
     {

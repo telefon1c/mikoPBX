@@ -26,22 +26,12 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\OutgoingCallRulesTrait;
 
 abstract class CreateOutgoingCallRuleTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
     use OutgoingCallRulesTrait;
-
-    private static bool $isLoggedIn = false;
     private static bool $isTableCleared = false;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         if (!self::$isTableCleared) {
             $this->clearOutgoingRules();
             self::$isTableCleared = true;

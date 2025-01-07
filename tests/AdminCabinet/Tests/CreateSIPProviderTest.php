@@ -28,20 +28,9 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
  */
 abstract class CreateSIPProviderTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
-
-    private static bool $isLoggedIn = false;
-
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $this->setSessionName("Test: Create SIP provider - " . $this->getSIPProviderData()['description']);
     }
 
@@ -52,6 +41,7 @@ abstract class CreateSIPProviderTest extends MikoPBXTestsBase
 
     /**
      * Test creating SIP provider
+     * @depends testLogin
      */
     public function testCreateSIPProvider(): void
     {

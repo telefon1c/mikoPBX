@@ -30,24 +30,13 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
  */
 abstract class CreateMOHAudioFileTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
-
     protected const UPLOAD_WAIT_TIME = 2;
     protected const FORM_READY_TIMEOUT = 30;
     protected const MOH_PREFIX = 'moh_';
 
-    private static bool $isLoggedIn = false;
-
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $data = $this->getAudioFileData();
         $this->setSessionName("Test: Create MOH File - " . $data['name']);
     }

@@ -11,9 +11,6 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
  */
 abstract class CreateIVRMenuTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
-
-    private static bool $isLoggedIn = false;
 
     /**
      * Set up before each test
@@ -21,13 +18,6 @@ abstract class CreateIVRMenuTest extends MikoPBXTestsBase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $this->setSessionName("Test: Create IVR menu - " . $this->getIVRMenuData()['name']);
     }
 

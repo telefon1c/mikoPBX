@@ -50,23 +50,49 @@ class MikoPBXTestsBase extends BrowserStackTest
         ]
     ];
 
-    /**
-     * BrowserStack action types
-     */
-    private const BROWSER_STACK_ACTIONS = [
-        'annotate' => 'browserstack_executor: {"action": "annotate", "arguments": {"level": "%s", "data": "%s"}}',
-        'status' => 'browserstack_executor: {"action": "setSessionStatus", "arguments": {"status": "%s", "reason": "%s"}}',
-        'name' => 'browserstack_executor: {"action": "setSessionName", "arguments": {"name": "%s"}}'
-    ];
+
+    use LoginTrait;
 
     /**
-     * Set up method called before each test
+     * @var bool Flag to track if login has been performed
+     */
+    private static bool $isLoggedIn = false;
+
+    /**
+     * Set up before class
+     */
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+        self::$isLoggedIn = false;
+    }
+
+    /**
+     * Set up before each test
+     *
+     * @throws \Exception
      */
     protected function setUp(): void
     {
         parent::setUp();
         $this->configureDriver();
         $this->createTestDirectories();
+        $this->initializeCookieManager();
+        // Perform login if not already logged in
+        if (!self::$isLoggedIn) {
+            // Get login credentials from data provider
+            $loginData = $this->loginDataProvider();
+            $this->testLogin($loginData[0][0]);
+            self::$isLoggedIn = true;
+        }
+
+        // Verify we're still logged in
+        if (!$this->isUserLoggedIn()) {
+            self::$isLoggedIn = false;
+            $loginData = $this->loginDataProvider();
+            $this->testLogin($loginData[0][0]);
+            self::$isLoggedIn = true;
+        }
     }
 
     /**
@@ -140,61 +166,67 @@ class MikoPBXTestsBase extends BrowserStackTest
     }
 
     /**
-     * Send command to BrowserStack
+     * Add annotation in BrowserStack with proper JSON encoding
      *
-     * @param string $action BrowserStack action
-     * @param array $arguments Action arguments
+     * @param string $text Annotation text
+     * @param string $level Annotation level (info, warning, error)
      */
-    protected function sendBrowserStackCommand(string $action, array $arguments): void
+    public static function annotate(string $text, string $level = 'info'): void
     {
-        if (!isset(self::BROWSER_STACK_ACTIONS[$action])) {
-            throw new RuntimeException("Unknown BrowserStack action: $action");
-        }
+        $data = [
+            'action' => 'annotate',
+            'arguments' => [
+                'level' => $level,
+                'data' => $text
+            ]
+        ];
 
-        $command = vsprintf(self::BROWSER_STACK_ACTIONS[$action], $arguments);
+        $command = 'browserstack_executor: ' . json_encode($data);
         self::$driver->executeScript($command);
     }
 
     /**
-     * Add annotation in BrowserStack
-     *
-     * @param string $text Annotation text
-     * @param string $level Annotation level
-     */
-    public static function annotate(string $text, string $level = 'info'): void
-    {
-        self::$driver->executeScript(
-            sprintf(self::BROWSER_STACK_ACTIONS['annotate'], $level, $text)
-        );
-    }
-
-    /**
-     * Set BrowserStack session status
+     * Set BrowserStack session status using proper JSON encoding
      *
      * @param string $text Status message
      * @param string $status Status value
      */
     public static function setSessionStatus(string $text, string $status = 'failed'): void
     {
-        self::$driver->executeScript(
-            sprintf(
-                self::BROWSER_STACK_ACTIONS['status'],
-                $status,
-                substr($text, 0, 256)
-            )
-        );
+        $data = [
+            'action' => 'setSessionStatus',
+            'arguments' => [
+                'status' => $status,
+                'reason' => substr($text, 0, 256)
+            ]
+        ];
+
+        $command = 'browserstack_executor: ' . json_encode($data);
+        self::$driver->executeScript($command);
     }
+
 
     /**
      * Update current session name
      *
      * @param string $name Session name
      */
+    /**
+     * Update current session name in BrowserStack
+     *
+     * @param string $name Session name
+     */
     public static function setSessionName(string $name): void
     {
-        self::$driver->executeScript(
-            sprintf(self::BROWSER_STACK_ACTIONS['name'], $name)
-        );
+        $data = [
+            'action' => 'setSessionName',
+            'arguments' => [
+                'name' => $name
+            ]
+        ];
+
+        $command = 'browserstack_executor: ' . json_encode($data);
+        self::$driver->executeScript($command);
     }
 
     /**
@@ -290,7 +322,7 @@ class MikoPBXTestsBase extends BrowserStackTest
             $message = $this->formatAnnotationMessage($action, $context);
 
             // Send to BrowserStack
-            $this->sendBrowserStackAnnotation($message, $level);
+            $this->annotate($message, $level);
 
             // Log locally if needed
             $this->writeToLocalLog($action, $context, $level);
@@ -324,23 +356,6 @@ class MikoPBXTestsBase extends BrowserStackTest
         }
 
         return $message;
-    }
-
-    /**
-     * Send annotation to BrowserStack with proper JSON encoding
-     *
-     * @param string $message Formatted message
-     * @param string $level Log level
-     */
-    private function sendBrowserStackAnnotation(string $message, string $level): void
-    {
-        $command = sprintf(
-            self::BROWSER_STACK_ACTIONS['annotate'],
-            $level,
-            addslashes($message)
-        );
-
-        self::$driver->executeScript($command);
     }
 
     /**

@@ -20,10 +20,10 @@
     <testsuites>
         <testsuite name="TestMikoPBXPasswords">
             <file>Tests/ChangeWeakPasswordTest.php</file>
+            <file>Tests/FillPBXSettingsTest.php</file>
         </testsuite>
 
         <testsuite name="Extensions">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/Extensions</directory>
             <file>Tests/ChangeExtensionsSettingsTest.php</file>
             <file>Tests/DeleteExtensionTest.php</file>
@@ -32,46 +32,38 @@
         </testsuite>
 
         <testsuite name="Providers">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/SIPProviders</directory>
             <directory>Tests/IAXProviders</directory>
             <file>Tests/DeleteProviderTest.php</file>
         </testsuite>
 
         <testsuite name="IVR Menu">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/IVRMenus</directory>
         </testsuite>
 
         <testsuite name="Call Queues">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/CallQueues</directory>
             <file>Tests/ChangeCallQueueTest.php</file>
             <file>Tests/CheckDropdownsOnDeleteQueueTest.php</file>
         </testsuite>
 
         <testsuite name="AMI Users">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/AMIUsers</directory>
         </testsuite>
 
         <testsuite name="Out Of Work Periods">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/OutOfWorkPeriods</directory>
         </testsuite>
 
         <testsuite name="Firewall Rules">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/FirewallRules</directory>
         </testsuite>
 
         <testsuite name="MOHFiles">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/MOHFiles</directory>
         </testsuite>
 
         <testsuite name="AudioFiles">
-            <file>Tests/LoginTest.php</file>
             <file>Tests/CheckDropdownBeforeCreateAudioFileTest.php</file>
             <directory>Tests/AudioFiles</directory>
             <file>Tests/CheckDropdownAfterCreateAudioFileTest.php</file>
@@ -80,18 +72,15 @@
         </testsuite>
 
         <testsuite name="IncomingCallRules">
-            <file>Tests/LoginTest.php</file>
             <file>Tests/CreateDefaultIncomingCallRule.php</file>
             <directory>Tests/IncomingCallRules</directory>
         </testsuite>
 
         <testsuite name="IncomingCallRules">
-            <file>Tests/LoginTest.php</file>
             <directory>Tests/OutgoingCallRules</directory>
         </testsuite>
 
         <testsuite name="OtherTestMikoPBX">
-            <file>Tests/FillPBXSettingsTest.php</file>
             <file>Tests/CustomFileChangeTest.php</file>
             <file>Tests/FillDataTimeSettingsTest.php</file>
             <file>Tests/CreateFail2BanRulesTest.php</file>
@@ -101,7 +90,6 @@
         </testsuite>
 
         <testsuite name="PBXExtensions">
-            <file>Tests/LoginTest.php</file>
             <file>Tests/ChangeLicenseKeyTest.php</file>
             <directory>Tests/PBXExtensions</directory>
         </testsuite>

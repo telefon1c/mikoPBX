@@ -12,10 +12,7 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\ModuleXPathsTrait;
 
 abstract class InstallModuleTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
     use ModuleXPathsTrait;
-
-    private static bool $isLoggedIn = false;
     protected const INSTALLATION_TIMEOUT = 120;
     protected const STATE_CHANGE_TIMEOUT = 45;
     protected const STATE_CHECK_INTERVAL = 5;
@@ -24,13 +21,6 @@ abstract class InstallModuleTest extends MikoPBXTestsBase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $data = $this->getModuleData();
         $this->setSessionName("Test: Install module - {$data['moduleId']}");
     }

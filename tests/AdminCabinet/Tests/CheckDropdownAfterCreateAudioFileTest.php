@@ -46,7 +46,6 @@ class CheckDropdownAfterCreateAudioFileTest extends MikoPBXTestsBase
     /**
      * Test checking the dropdown menu after creating audio files
      *
-     * @depends testLogin
      * @dataProvider audioFilesProvider
      *
      * @param string $audioKey The key identifier for the audio file

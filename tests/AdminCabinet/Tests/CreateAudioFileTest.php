@@ -21,7 +21,6 @@
 namespace MikoPBX\Tests\AdminCabinet\Tests;
 
 use MikoPBX\Tests\AdminCabinet\Lib\MikoPBXTestsBase;
-use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
 use MikoPBX\Tests\AdminCabinet\Tests\Traits\AudioFilesTrait;
 
 /**
@@ -29,21 +28,12 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\AudioFilesTrait;
  */
 abstract class CreateAudioFileTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
     use AudioFilesTrait;
 
-    private static bool $isLoggedIn = false;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $data = $this->getAudioFileData();
         $this->setSessionName("Test: Create Audio File - " . $data['name']);
     }
@@ -55,6 +45,7 @@ abstract class CreateAudioFileTest extends MikoPBXTestsBase
 
     /**
      * Test creating an audio file
+     * @depends testLogin
      */
     public function testCreateAudioFile(): void
     {

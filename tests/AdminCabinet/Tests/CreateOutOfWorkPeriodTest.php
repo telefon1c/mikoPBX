@@ -12,21 +12,12 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\OutOfWorkPeriodsTrait;
  */
 abstract class CreateOutOfWorkPeriodTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
     use OutOfWorkPeriodsTrait;
-
-    private static bool $isLoggedIn = false;
     private static bool $isTableCleared = false;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
 
         if (!self::$isTableCleared) {
             $this->clearOutOfWorkTable();

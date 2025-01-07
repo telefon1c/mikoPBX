@@ -81,7 +81,7 @@ class ChangeWeakPasswordTest extends MikoPBXTestsBase
     }
 
     // Change password field
-    function changePassword(string $path, string $passwordFieldName, string $password)
+    function changePassword(string $path, string $passwordFieldName, string $password): void
     {
         self::$driver->get("{$GLOBALS['SERVER_PBX']}/admin-cabinet/general-settings/modify/#/{$path}");
         $this->changeInputField($passwordFieldName, $password);

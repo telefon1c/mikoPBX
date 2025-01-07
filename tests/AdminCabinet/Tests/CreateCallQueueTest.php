@@ -36,13 +36,6 @@ abstract class CreateCallQueueTest extends MikoPBXTestsBase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        if (!self::$isLoggedIn) {
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $this->setSessionName("Test: Create Call Queue - " . $this->getCallQueueData()['name']);
     }
 

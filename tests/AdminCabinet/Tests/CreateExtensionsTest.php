@@ -26,22 +26,6 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
 
 abstract class CreateExtensionsTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
-
-    /**
-     * @var bool Flag to track if login has been performed
-     */
-    private static bool $isLoggedIn = false;
-
-    /**
-     * Set up before class
-     */
-    public static function setUpBeforeClass(): void
-    {
-        parent::setUpBeforeClass();
-        self::$isLoggedIn = false;
-    }
-
     /**
      * Set up before each test
      *
@@ -50,23 +34,6 @@ abstract class CreateExtensionsTest extends MikoPBXTestsBase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-        // Perform login if not already logged in
-        if (!self::$isLoggedIn) {
-            // Get login credentials from data provider
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
-        // Verify we're still logged in
-        if (!$this->isUserLoggedIn()) {
-            self::$isLoggedIn = false;
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
-        }
-
         $params = $this->getEmployeeData();
         $this->setSessionName("Test: Creating extension for {$params['username']}");
     }
