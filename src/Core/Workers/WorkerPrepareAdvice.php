@@ -130,6 +130,7 @@ class WorkerPrepareAdvice extends WorkerBase
             } elseif ($pid == 0) {
                 // Child process.
                 try {
+                    $this->setForked();
                     $this->processAdvice($adviceType);
                 } catch (Throwable $e) {
                     CriticalErrorsHandler::handleExceptionWithSyslog($e);

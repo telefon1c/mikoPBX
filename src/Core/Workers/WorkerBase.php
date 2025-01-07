@@ -90,6 +90,13 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
     private const string LOG_NAMESPACE_SEPARATOR = '\\';
 
     /**
+     * Flag indicating whether the worker is a forked process
+     *
+     * @var bool
+     */
+    private bool $isForked = false;
+
+    /**
      * Maximum number of processes that can be created
      *
      * @var int
@@ -203,17 +210,52 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
      *
      * @throws RuntimeException If unable to write PID file
      */
+    /**
+     * Handles PID file operations for worker processes
+     */
     private function savePidFile(): void
     {
         try {
-            $activeProcesses = Processes::getPidOfProcess(static::class);
-            $processes = array_filter(explode(' ', $activeProcesses));
-
-            if (count($processes) === 1) {
-                $this->saveSinglePidFile($activeProcesses);
-            } else {
-                $this->saveMultiplePidFiles($processes);
+            $pid = getmypid();
+            if ($pid === false) {
+                throw new RuntimeException('Could not get process ID');
             }
+
+            $pidFile = $this->getPidFile();
+            $pidDir = dirname($pidFile);
+
+            // Ensure PID directory exists
+            if (!is_dir($pidDir) && !mkdir($pidDir, 0755, true)) {
+                throw new RuntimeException("Could not create PID directory: $pidDir");
+            }
+
+            // For forked processes, append the PID to the filename
+            if (isset($this->isForked) && $this->isForked === true) {
+                $pidFile = $this->getForkedPidFile($pid);
+            }
+
+            // Use exclusive file creation to avoid race conditions
+            $handle = fopen($pidFile, 'c+');
+            if ($handle === false) {
+                throw new RuntimeException("Could not open PID file: $pidFile");
+            }
+
+            if (!flock($handle, LOCK_EX | LOCK_NB)) {
+                fclose($handle);
+                throw new RuntimeException("Could not acquire lock on PID file: $pidFile");
+            }
+
+            // Write PID to file
+            if (ftruncate($handle, 0) === false ||
+                fwrite($handle, (string)$pid) === false) {
+                flock($handle, LOCK_UN);
+                fclose($handle);
+                throw new RuntimeException("Could not write to PID file: $pidFile");
+            }
+
+            flock($handle, LOCK_UN);
+            fclose($handle);
+
         } catch (Throwable $e) {
             SystemMessages::sysLogMsg(
                 static::class,
@@ -221,43 +263,6 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
                 LOG_WARNING
             );
             throw new RuntimeException('PID file operation failed', 0, $e);
-        }
-    }
-
-    /**
-     * Saves a single PID to file
-     *
-     * @param string $pid Process ID to save
-     * @throws RuntimeException If write fails
-     */
-    private function saveSinglePidFile(string $pid): void
-    {
-        if (!file_put_contents($this->getPidFile(), $pid)) {
-            throw new RuntimeException('Could not write to PID file');
-        }
-    }
-
-    /**
-     * Saves multiple PIDs to separate files
-     *
-     * @param array $processes Array of process IDs
-     * @throws RuntimeException If write fails
-     */
-    private function saveMultiplePidFiles(array $processes): void
-    {
-        $pidFilesDir = dirname($this->getPidFile());
-        $baseName = (string)pathinfo($this->getPidFile(), PATHINFO_BASENAME);
-        $pidFile = $pidFilesDir . '/' . $baseName;
-
-        // Delete old PID files
-        $rm = Util::which('rm');
-        Processes::mwExec("$rm -rf $pidFile*");
-
-        foreach ($processes as $index => $process) {
-            $pidFilePath = sprintf("%s-%d%s", $pidFile, $index + 1, self::PID_FILE_SUFFIX);
-            if (!file_put_contents($pidFilePath, $process)) {
-                throw new RuntimeException("Could not write to PID file: $pidFilePath");
-            }
         }
     }
 
@@ -270,6 +275,22 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
     {
         $name = str_replace("\\", '-', static::class);
         return self::PID_FILE_DIR . "/$name" . self::PID_FILE_SUFFIX;
+    }
+
+    /**
+     * Generates PID file path for forked processes
+     *
+     * @param int $pid Process ID
+     * @return string Full path to the PID file
+     */
+    private function getForkedPidFile(int $pid): string
+    {
+        $basePidFile = $this->getPidFile();
+        return sprintf(
+            '%s.%d',
+            $basePidFile,
+            $pid
+        );
     }
 
     /**
@@ -425,14 +446,27 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
     }
 
     /**
-     * Cleans up PID file during shutdown
+     * Safely cleans up PID file during shutdown
      */
     private function cleanupPidFile(): void
     {
         try {
-            $pidFile = $this->getPidFile();
+            $pid = getmypid();
+            if ($pid === false) {
+                return;
+            }
+
+            // Determine which PID file to remove
+            $pidFile = isset($this->isForked) && $this->isForked === true
+                ? $this->getForkedPidFile($pid)
+                : $this->getPidFile();
+
+            // Only remove the file if it exists and contains our PID
             if (file_exists($pidFile)) {
-                unlink($pidFile);
+                $storedPid = file_get_contents($pidFile);
+                if ($storedPid === (string)$pid) {
+                    unlink($pidFile);
+                }
             }
         } catch (Throwable $e) {
             SystemMessages::sysLogMsg(
@@ -539,6 +573,14 @@ abstract class WorkerBase extends Injectable implements WorkerInterface
     public function makePingTubeName(string $workerClassName): string
     {
         return Text::camelize("ping_$workerClassName", '\\');
+    }
+
+    /**
+     * Sets flag for forked process after pcntl_fork()
+     */
+    public function setForked(): void
+    {
+        $this->isForked = true;
     }
 
     /**

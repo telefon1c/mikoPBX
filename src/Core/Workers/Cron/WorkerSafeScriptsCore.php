@@ -263,6 +263,7 @@ class WorkerSafeScriptsCore extends WorkerBase
             if ($pid === 0) {
                 // Child process
                 try {
+                    $this->setForked();
                     $this->checkWorkerByType($workerConfig['type'], $workerConfig['worker']);
                     exit(0);
                 } catch (Throwable $e) {
@@ -291,6 +292,7 @@ class WorkerSafeScriptsCore extends WorkerBase
             if ($pid === 0) {
                 // Child process
                 try {
+                    $this->setForked();
                     SystemMessages::sysLogMsg(
                         __CLASS__,
                         "Restarting worker: $worker",
@@ -464,8 +466,11 @@ class WorkerSafeScriptsCore extends WorkerBase
             $result = false;
             if ($WorkerPID !== '') {
                 // Ping the worker via Beanstalk queue.
+                SystemMessages::sysLogMsg(__METHOD__, "Service $workerClassName is alive. Sending ping request.", LOG_DEBUG);
                 $queue = new BeanstalkClient($this->makePingTubeName($workerClassName));
                 [$result] = $queue->sendRequest('ping', 5, 1);
+                SystemMessages::sysLogMsg(__METHOD__, "Service $workerClassName answered $result", LOG_DEBUG);
+
             }
             if (false === $result) {
                 Processes::processPHPWorker($workerClassName);
