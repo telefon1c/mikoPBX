@@ -30,7 +30,7 @@ trait IncomingCallRulesTrait
         $this->changeTextAreaValue('note', $params['note']);
 
         if (!empty($params['providerName'])) {
-            $params['provider'] = $this->selectDropdownItemByName('provider', $params['providerName']);
+            $this->selectDropdownItem('provider', $params['providerName']);
         } else {
             $this->selectDropdownItem('provider', $params['provider']);
         }

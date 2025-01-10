@@ -5,6 +5,7 @@ namespace MikoPBX\Tests\AdminCabinet\Lib\Traits;
 use Facebook\WebDriver\Exception\ElementNotInteractableException;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Exception\TimeoutException;
+use Facebook\WebDriver\Interactions\WebDriverActions;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverElement;
 use Facebook\WebDriver\WebDriverExpectedCondition;
@@ -333,5 +334,29 @@ trait ElementInteractionTrait
         return self::$driver->wait($timeout, self::ELEMENT['intervals']['wait'])->until(
             WebDriverExpectedCondition::presenceOfElementLocated(WebDriverBy::xpath($xpath))
         );
+    }
+
+
+    /**
+     * Find modify button on row with id $text and click it
+     *
+     * @param string $id
+     */
+    protected function clickModifyButtonOnRowWithID(string $id): void
+    {
+        self::annotate("Test action: Click modify button with id=$id");
+        $xpath = ('//tr[contains(@class, "row") and @id="' . $id . '"]//a[contains(@href,"modify")]');
+        try {
+            $tableButtonModify = self::$driver->findElement(WebDriverBy::xpath($xpath));
+            $actions = new WebDriverActions(self::$driver);
+            $actions->moveToElement($tableButtonModify);
+            $actions->perform();
+            $tableButtonModify->click();
+            $this->waitForAjax();
+        } catch (NoSuchElementException $e) {
+            $this->fail('Not found row with id=' . $id . ' on this page' . PHP_EOL);
+        } catch (\Exception $e) {
+            $this->fail('Unknown error ' . $e->getMessage() . PHP_EOL);
+        }
     }
 }

@@ -50,7 +50,7 @@ trait OutgoingCallRulesTrait
     protected function selectProvider(array $params): void
     {
         if (!empty($params['providerName'])) {
-            $params['providerid'] = $this->selectDropdownItemByName('providerid', $params['providerName']);
+            $this->selectDropdownItem('providerid', $params['providerName']);
         } else {
             $this->selectDropdownItem('providerid', $params['providerid']);
         }

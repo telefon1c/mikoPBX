@@ -21,6 +21,7 @@
         <testsuite name="TestMikoPBXPasswords">
             <file>Tests/ChangeWeakPasswordTest.php</file>
             <file>Tests/FillPBXSettingsTest.php</file>
+            <file>Tests/ChangeLicenseKeyTest.php</file>
         </testsuite>
 
         <testsuite name="Extensions">
@@ -90,7 +91,6 @@
         </testsuite>
 
         <testsuite name="PBXExtensions">
-            <file>Tests/ChangeLicenseKeyTest.php</file>
             <directory>Tests/PBXExtensions</directory>
         </testsuite>
     </testsuites>

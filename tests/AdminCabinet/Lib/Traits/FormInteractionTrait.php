@@ -3,6 +3,8 @@
 namespace MikoPBX\Tests\AdminCabinet\Lib\Traits;
 
 use Facebook\WebDriver\Exception\NoSuchElementException;
+use Facebook\WebDriver\Exception\TimeoutException;
+use Facebook\WebDriver\Interactions\WebDriverActions;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverElement;
 use Facebook\WebDriver\WebDriverExpectedCondition;
@@ -355,23 +357,47 @@ trait FormInteractionTrait
     }
 
     /**
-     * Select dropdown item with improved handling of Semantic UI dropdowns
+     * Select an item from dropdown considering its current state
      *
      * @param string $name Dropdown name
      * @param string $value Value to select
      * @param bool $skipIfNotExist Skip if dropdown doesn't exist
+     * @throws \RuntimeException When dropdown or item not found
      */
     protected function selectDropdownItem(string $name, string $value, bool $skipIfNotExist = false): void
     {
         $this->logTestAction("Select dropdown", ['name' => $name, 'value' => $value]);
 
         try {
-            $dropdown = $this->findAndClickDropdown($name, $skipIfNotExist);
+            // Get dropdown state
+            ['element' => $dropdown, 'isSelected' => $isSelected] = $this->findDropdownAndCheckState($name, $skipIfNotExist);
+
             if ($dropdown) {
-                // Wait for dropdown menu to be fully visible
+                // Check if the desired value is already selected
+                if ($isSelected) {
+                    try {
+                        $currentValue = $dropdown->findElement(
+                            WebDriverBy::xpath('.//div[contains(@class, "item") and contains(@class, "active selected")]')
+                        )->getAttribute('data-value');
+
+                        // If current value matches desired value, no need to proceed
+                        if ($currentValue === $value) {
+                            return;
+                        }
+                    } catch (\Exception $e) {
+                        // If we can't get current value, proceed with selection
+                    }
+                }
+
+                // Click to open dropdown
+                $this->scrollIntoView($dropdown);
+                $dropdown->click();
+                usleep(self::DROPDOWN_CLICK_DELAY * 1000);
+
+                // Wait for dropdown menu to be visible
                 $this->waitForDropdownMenu();
 
-                // Select the item from visible menu
+                // Select item from visible menu
                 $menuXpath = '//div[contains(@class, "menu") and contains(@class, "visible")]' .
                     '//div[contains(@class, "item") and (@data-value="%s" or normalize-space(text())="%s")]';
 
@@ -389,20 +415,21 @@ trait FormInteractionTrait
                 $this->waitForAjax();
             }
         } catch (\Exception $e) {
-            $this->handleActionError('select dropdown item', "$name with value $value", $e);
+            $this->handleActionError('select dropdown item', "{$name} with value {$value}", $e);
         }
     }
 
+
     /**
-     * Find and click dropdown element with improved Semantic UI support
+     * Find dropdown element and check its current state
      *
      * @param string $name Dropdown name
      * @param bool $skipIfNotExist Skip if dropdown doesn't exist
-     * @return \Facebook\WebDriver\WebDriverElement|null
+     * @return array{element: ?\Facebook\WebDriver\WebDriverElement, isSelected: bool} Returns element and selection status
      */
-    private function findAndClickDropdown(string $name, bool $skipIfNotExist): ?\Facebook\WebDriver\WebDriverElement
+    private function findDropdownAndCheckState(string $name, bool $skipIfNotExist): array
     {
-        // XPath that handles both standard select and Semantic UI dropdown
+        // XPath for both standard select and Semantic UI dropdown
         $xpath = sprintf(
             '//select[@name="%1$s"]/ancestor::div[contains(@class, "dropdown")] | ' .
             '//div[contains(@class, "dropdown")][@id="%1$s"] | ' .
@@ -413,19 +440,29 @@ trait FormInteractionTrait
         $dropdown = $this->findElementSafely($xpath);
 
         if (!$dropdown && !$skipIfNotExist) {
-            throw new RuntimeException("Dropdown $name not found");
+            throw new RuntimeException("Dropdown {$name} not found");
         }
+
+        $isSelected = false;
 
         if ($dropdown) {
-            $this->scrollIntoView($dropdown);
-            $dropdown->click();
-
-            // Add small delay after click
-            usleep(self::DROPDOWN_CLICK_DELAY * 1000);
+            // Check if element already has selected class
+            try {
+                $isSelected = $dropdown->findElement(
+                        WebDriverBy::xpath('.//div[contains(@class, "item") and contains(@class, "active selected")]')
+                    ) !== null;
+            } catch (\Exception $e) {
+                // Element not found - means nothing is selected
+                $isSelected = false;
+            }
         }
 
-        return $dropdown;
+        return [
+            'element' => $dropdown,
+            'isSelected' => $isSelected
+        ];
     }
+
 
     /**
      * Wait for dropdown menu to become visible
