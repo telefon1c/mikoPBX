@@ -96,7 +96,7 @@ fi
 echo " - parted return ${resultParted}...";
 
 # Get the name of the new fourth partition
-partitionName=$(/bin/lsblk -r | /bin/busybox grep "$(/bin/busybox basename "$dev")" |  /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$" | /bin/sort -u);
+partitionName=$(/bin/lsblk -r | /bin/busybox grep "$(/bin/busybox basename "$dev")" |  /bin/busybox cut -d ' ' -f 1 | /bin/busybox grep "4$" | /bin/busybox sort -u);
 partitionFour="/dev/${partitionName}";
 
 # Retry the creation of the partition up to 25 times
