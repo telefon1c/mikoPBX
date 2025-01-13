@@ -215,6 +215,77 @@ class OutgoingContext extends AsteriskConfigClass
      */
     private function generateProviderContext(string &$conf, string $id_dialplan, array $rout): void
     {
+        // Add context header
+        $conf .= "\n[$id_dialplan]\n";
+
+        // Initialize variables for extensionVar and changeExtension
+        $extensionVar = $this->initTrimVariables($rout);
+
+        // Set number variable with prepend and extensionVar
+        $conf .= 'exten => ' . ExtensionsConf::ALL_NUMBER_EXTENSION . ',1,Set(number=' . $rout['prepend'] . $extensionVar . ')' . "\n\t";
+
+        // Filter number using regex pattern
+        $conf .= 'same => n,Set(number=${FILTER(\*\#\+1234567890,${number})})' . "\n\t";
+
+        // Hangup if number is empty
+        $conf .= 'same => n,ExecIf($["${number}x" == "x"]?Hangup())' . "\n\t";
+
+        // Set ROUTFOUND and PROVIDER_ID variables
+        $conf .= 'same => n,Set(ROUTFOUND=1)' . "\n\t";
+        $conf .= "same => n,Set(_PROVIDER_ID={$rout['providerid']})" . "\n\t";
+
+        // Set DOPTIONS based on EXTERNALPHONE and src_number
+        $conf .= 'same => n,ExecIf($["${EXTERNALPHONE}" == "${src_number}"]?Set(DOPTIONS=tk))' . "\n\t";
+
+        // Get dial command based on routing data
+        $dialCommand = $this->getDialCommand($rout);
+
+        // Set DIAL_COMMAND variable
+        $conf .= 'same => n,Set(DIAL_COMMAND=' . $dialCommand . ')' . "\n\t";
+        $conf .= 'same => n,ExecIf($["${DEF_DIAL_COMMAND}x" != "x"]?Set(DIAL_COMMAND=${DEF_DIAL_COMMAND}))' . "\n\t";
+
+        // Customize all-outgoing context
+        $conf .= 'same => n,GosubIf($["${DIALPLAN_EXISTS(all-outgoing-custom,${EXTEN},1)}" == "1"]?all-outgoing-custom,${EXTEN},1)' . "\n\t";
+
+        // Describing the ability to jump to a custom sub-context.
+        // Customize provider-specific outgoing context
+        $conf .= 'same => n,GosubIf($["${DIALPLAN_EXISTS(' . $rout['providerid'] . '-outgoing-custom,${EXTEN},1)}" == "1"]?' . $rout['providerid'] . '-outgoing-custom,${EXTEN},1)' . "\n\t";
+
+        // Return if NEED_RETURN is set
+        $conf .= 'same => n,ExecIf($["${NEED_RETURN}" == "1"]?return)' . "\n\t";
+
+        // Generating outgoing dialplan for additional modules; overriding the route's dialplan.
+        $confModules = $this->hookModulesMethod(AsteriskConfigInterface::GENERATE_OUT_ROUT_CONTEXT, [$rout]);
+        if (!empty($confModules)) {
+            $conf .= trim($confModules) . "\n\t";
+        }
+        // Execute dial based on ISTRANSFER
+        $conf .= 'same => n,Gosub(${ISTRANSFER}dial,${EXTEN},1)' . "\n\t";
+
+        $conf .= 'same => n,ExecIf($["${OFF_ANSWER_SUB}" != "1"]?Set(DIAL_OUT_ANSWER_OPTIONS=U(${ISTRANSFER}dial_answer)))' . "\n\t";
+        $conf .= 'same => n,Dial(${DIAL_COMMAND},600,${DOPTIONS}TK${DIAL_OUT_ANSWER_OPTIONS}b(dial_create_chan,s,1))' . "\n\t";
+        // Generate outgoing dialplan for additional modules
+        $confModules = $this->hookModulesMethod(AsteriskConfigInterface::GENERATE_OUT_ROUT_AFTER_DIAL_CONTEXT, [$rout]);
+        if (!empty($confModules)) {
+            $conf .= trim($confModules) . "\n\t";
+        }
+
+        // Customize provider-specific outgoing context after Dial command
+        $conf .= 'same => n,GosubIf($["${DIALPLAN_EXISTS(' . $rout['providerid'] . '-outgoing-after-dial-custom,${EXTEN}),1}" == "1"]?' . $rout['providerid'] . '-outgoing-after-dial-custom,${EXTEN},1)' . "\n\t";
+
+        // Perform transfer_dial_hangup if ISTRANSFER is set
+        $conf .= 'same => n,ExecIf($["${ISTRANSFER}x" != "x"]?Gosub(transfer_dial_hangup,${EXTEN},1))' . "\n\t";
+
+        // Hangup if DIALSTATUS is ANSWER
+        $conf .= 'same => n,ExecIf($["${DIALSTATUS}" = "ANSWER"]?Hangup())' . "\n\t";
+
+        // Handle BUSY condition
+        $conf .= 'same => n,ExecIf($["${DIALSTATUS}" = "BUSY"]?Busy(2))' . "\n\t";
+
+        // Set pt1c_UNIQUEID to empty value
+        $conf .= 'same => n,Set(pt1c_UNIQUEID=${EMPTY_VALUE})' . "\n\t";
+
+        $conf .= 'same => n,return' . "\n";
     }
 
     /**
