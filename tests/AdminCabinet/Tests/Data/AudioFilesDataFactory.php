@@ -25,7 +25,7 @@ namespace MikoPBX\Tests\AdminCabinet\Tests\Data;
  */
 class AudioFilesDataFactory
 {
-    private const AUDIO_BASE_PATH = 'C:\Users\hello\Documents\audio';
+    private const string AUDIO_BASE_PATH = 'C:\Users\hello\Documents\audio';
 
     private static array $audioFiles = [
         'first.audio' => [

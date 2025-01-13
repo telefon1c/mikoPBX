@@ -27,6 +27,8 @@ trait TabNavigationTrait
     protected function navigateToTab(string $identifier): void
     {
         $xpath = "//div[@id='general-settings-menu']//ancestor::a[@data-tab='{$identifier}']";
+        $selectedTab = $this->waitForElement($xpath);
+        $this->scrollIntoView($selectedTab);
         $tab = self::$driver->findElement(WebDriverBy::xpath($xpath));
         $tab->click();
     }

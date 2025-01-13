@@ -44,10 +44,6 @@ class CheckDropdownsOnDeleteQueueTest extends MikoPBXTestsBase
     /**
      * Test checking dropdown menus after deleting queue.
      *
-     * @depends testLogin
-     *
-     * @param array $params The parameters for the extension.
-     *
      * @throws \Facebook\WebDriver\Exception\NoSuchElementException
      * @throws \Facebook\WebDriver\Exception\TimeoutException|\Exception
      */

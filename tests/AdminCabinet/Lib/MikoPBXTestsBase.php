@@ -3,6 +3,10 @@
 namespace MikoPBX\Tests\AdminCabinet\Lib;
 
 use Exception;
+use Facebook\WebDriver\WebDriverBy;
+use Facebook\WebDriver\WebDriverExpectedCondition;
+use Facebook\WebDriver\WebDriverWait;
+use GuzzleHttp\Exception\GuzzleException;
 use MikoPBX\Tests\AdminCabinet\Lib\Traits\AssertionTrait;
 use MikoPBX\Tests\AdminCabinet\Lib\Traits\ElementInteractionTrait;
 use MikoPBX\Tests\AdminCabinet\Lib\Traits\FormInteractionTrait;
@@ -24,34 +28,6 @@ class MikoPBXTestsBase extends BrowserStackTest
     use ScreenshotTrait;
     use AssertionTrait;
 
-    /**
-     * Global test configuration
-     */
-    protected const CONFIG = [
-        'browser' => [
-            'timeouts' => [
-                'page_load' => 30,
-                'script' => 30,
-                'element' => 10
-            ],
-            'window' => [
-                'width' => 1920,
-                'height' => 1080
-            ]
-        ],
-        'test' => [
-            'retries' => 3,
-            'delay' => 1,
-            'screenshot_dir' => 'test-screenshots'
-        ],
-        'paths' => [
-            'temp' => '/tmp/mikopbx-tests',
-            'logs' => '/tmp/mikopbx-tests/logs'
-        ]
-    ];
-
-
-    use LoginTrait;
 
     /**
      * @var bool Flag to track if login has been performed
@@ -63,69 +39,51 @@ class MikoPBXTestsBase extends BrowserStackTest
      */
     public static function setUpBeforeClass(): void
     {
+        error_log("[BrowserStack] Starting setUpBeforeClass in MikoPBXTestsBase");
         parent::setUpBeforeClass();
         self::$isLoggedIn = false;
+        error_log("[BrowserStack] Completed setUpBeforeClass in MikoPBXTestsBase");
     }
 
     /**
      * Set up before each test
      *
      * @throws \Exception
+     * @throws GuzzleException
      */
     protected function setUp(): void
     {
+        error_log("[BrowserStack] Starting setUp in MikoPBXTestsBase");
         parent::setUp();
-        $this->configureDriver();
-        $this->createTestDirectories();
-        $this->initializeCookieManager();
+        
         // Perform login if not already logged in
         if (!self::$isLoggedIn) {
+            error_log("[BrowserStack] Performing login");
             // Get login credentials from data provider
             $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
+            $this->loginOnMikoPBX($loginData[0][0]);
             self::$isLoggedIn = true;
-        }
-
-        // Verify we're still logged in
-        if (!$this->isUserLoggedIn()) {
-            self::$isLoggedIn = false;
-            $loginData = $this->loginDataProvider();
-            $this->testLogin($loginData[0][0]);
-            self::$isLoggedIn = true;
+            error_log("[BrowserStack] Login completed");
+        } else {
+            error_log("[BrowserStack] Skipping login - already logged in");
         }
     }
 
     /**
-     * Configure WebDriver settings
+     * Helper method to wait for element
+     *
+     * @param string $xpath XPath selector
+     * @param int $timeout Timeout in seconds
+     * @return mixed
      */
-    private function configureDriver(): void
+    protected function waitForElement(string $xpath, int $timeout = self::WAIT_TIMEOUT): mixed
     {
-        self::$driver->manage()->window()->setSize(
-            new \Facebook\WebDriver\WebDriverDimension(
-                self::CONFIG['browser']['window']['width'],
-                self::CONFIG['browser']['window']['height']
+        $wait = new WebDriverWait(self::$driver, $timeout);
+        return $wait->until(
+            WebDriverExpectedCondition::presenceOfElementLocated(
+                WebDriverBy::xpath($xpath)
             )
         );
-
-        self::$driver->manage()->timeouts()->pageLoadTimeout(
-            self::CONFIG['browser']['timeouts']['page_load']
-        );
-
-        self::$driver->manage()->timeouts()->setScriptTimeout(
-            self::CONFIG['browser']['timeouts']['script']
-        );
-    }
-
-    /**
-     * Create necessary test directories
-     */
-    private function createTestDirectories(): void
-    {
-        foreach (self::CONFIG['paths'] as $path) {
-            if (!is_dir($path) && !mkdir($path, 0777, true) && !is_dir($path)) {
-                throw new RuntimeException("Failed to create directory: $path");
-            }
-        }
     }
 
     /**

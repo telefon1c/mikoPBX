@@ -66,7 +66,7 @@ trait LoginTrait
      * @param array $params Login parameters
      * @return void
      */
-    public function testLogin(array $params): void
+    public function LoginOnMikoPbx(array $params): void
     {
         if ($this->cookieManager === null) {
             $this->initializeCookieManager();

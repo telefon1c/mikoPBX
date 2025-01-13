@@ -51,8 +51,6 @@ class ChangeCallQueueTest extends MikoPBXTestsBase
     /**
      * Test changing call queue extension settings.
      *
-     * @depends testLogin
-     *
      */
     public function testChangeCallQueueExtension(): void
     {

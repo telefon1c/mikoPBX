@@ -41,7 +41,6 @@ abstract class CreateSIPProviderTest extends MikoPBXTestsBase
 
     /**
      * Test creating SIP provider
-     * @depends testLogin
      */
     public function testCreateSIPProvider(): void
     {

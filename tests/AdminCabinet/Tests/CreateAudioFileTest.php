@@ -30,12 +30,14 @@ abstract class CreateAudioFileTest extends MikoPBXTestsBase
 {
     use AudioFilesTrait;
 
-
     protected function setUp(): void
     {
         parent::setUp();
         $data = $this->getAudioFileData();
-        $this->setSessionName("Test: Create Audio File - " . $data['name']);
+        if (self::$driver !== null) {
+            $this->setSessionName("Audio File Test: " . $data['name']);
+            error_log(sprintf("[BrowserStack] Updated session name for test: %s", $data['name']));
+        }
     }
 
     /**
@@ -45,7 +47,6 @@ abstract class CreateAudioFileTest extends MikoPBXTestsBase
 
     /**
      * Test creating an audio file
-     * @depends testLogin
      */
     public function testCreateAudioFile(): void
     {

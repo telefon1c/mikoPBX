@@ -80,7 +80,7 @@ trait NavigationTrait
      * Click sidebar menu item by href
      *
      * @param string $href Menu item href
-     * @throws RuntimeException
+     * @throws RuntimeException|\Exception
      */
     protected function clickSidebarMenuItemByHref(string $href): void
     {

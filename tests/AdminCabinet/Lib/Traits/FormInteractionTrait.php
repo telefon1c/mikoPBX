@@ -196,13 +196,13 @@ trait FormInteractionTrait
     }
 
 
-
     /**
      * Change file input value
      *
      * @param string $name File input name
      * @param string $filePath Path to file
      * @param bool $skipIfNotExist Skip if field doesn't exist
+     * @throws \Exception
      */
     protected function changeFileField(string $name, string $filePath, bool $skipIfNotExist = false): void
     {
@@ -215,13 +215,7 @@ trait FormInteractionTrait
             if (!$fileInput && !$skipIfNotExist) {
                 throw new RuntimeException("File input $name not found");
             }
-
-            if ($fileInput) {
-                if (!file_exists($filePath)) {
-                    throw new RuntimeException("File not found: $filePath");
-                }
-                $fileInput->sendKeys($filePath);
-            }
+            $fileInput?->sendKeys($filePath);
         } catch (\Exception $e) {
             $this->handleActionError('change file field', $name, $e);
         }
@@ -231,6 +225,7 @@ trait FormInteractionTrait
      * Submit form
      *
      * @param string $formId Form identifier
+     * @throws \Exception
      */
     protected function submitForm(string $formId): void
     {

@@ -46,7 +46,6 @@ class CheckDropdownAfterDeleteAudioFileTest extends MikoPBXTestsBase
     /**
      * Test the dropdown menu state after audio file deletion
      *
-     * @depends testLogin
      * @dataProvider audioFilesProvider
      *
      * @param string $audioKey The key identifier for the audio file

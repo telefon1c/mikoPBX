@@ -36,8 +36,6 @@ abstract class CreateIncomingCallRuleTest extends MikoPBXTestsBase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->initializeCookieManager();
-
         if (!self::$isTableCleared) {
             $this->clearIncomingRules();
             self::$isTableCleared = true;
