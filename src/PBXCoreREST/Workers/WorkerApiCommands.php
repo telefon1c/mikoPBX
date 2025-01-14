@@ -51,8 +51,9 @@ class WorkerApiCommands extends WorkerBase
     /**
      * Maximum time to wait for child process (seconds)
      */
-    private const int CHILD_PROCESS_TIMEOUT = 60;
-
+    private const int CHILD_PROCESS_TIMEOUT = 180;
+    /** @var array Store all active child PIDs */
+    private array $childPids = [];
 
     /**
      * Starts the worker.
@@ -63,6 +64,8 @@ class WorkerApiCommands extends WorkerBase
      */
     public function start(array $argv): void
     {
+        $this->setupSignalHandlers();
+
         /** @var BeanstalkConnectionWorkerApiProvider $beanstalk */
         $beanstalk = $this->di->getShared(BeanstalkConnectionWorkerApiProvider::SERVICE_NAME);
         if ($beanstalk->isConnected() === false) {
@@ -106,33 +109,38 @@ class WorkerApiCommands extends WorkerBase
         }
 
         // Parent process
-        $startTime = time();
-        $status = 0;
+        $this->trackChild($pid);
 
-        // Wait for child with timeout
-        while (time() - $startTime < self::CHILD_PROCESS_TIMEOUT) {
-            $res = pcntl_waitpid($pid, $status, WNOHANG);
-            if ($res === -1) {
-                throw new RuntimeException("Failed to wait for child process");
-            }
-            if ($res > 0) {
-                // Child process completed
-                if (pcntl_wifexited($status)) {
-                    $exitStatus = pcntl_wexitstatus($status);
-                    if ($exitStatus !== 0) {
-                        throw new RuntimeException("Child process failed with status: $exitStatus");
+        try {
+            $startTime = time();
+            $status = 0;
+
+            // Wait for child with timeout
+            while (time() - $startTime < self::CHILD_PROCESS_TIMEOUT) {
+                $res = pcntl_waitpid($pid, $status, WNOHANG);
+                if ($res === -1) {
+                    throw new RuntimeException("Failed to wait for child process");
+                }
+                if ($res > 0) {
+                    // Child process completed
+                    if (pcntl_wifexited($status)) {
+                        $exitStatus = pcntl_wexitstatus($status);
+                        if ($exitStatus !== 0) {
+                            throw new RuntimeException("Child process failed with status: $exitStatus");
+                        }
+                        return;
+                    }
+                    if (pcntl_wifsignaled($status)) {
+                        $signal = pcntl_wtermsig($status);
+                        throw new RuntimeException("Child process terminated by signal: $signal");
                     }
                     return;
                 }
-                if (pcntl_wifsignaled($status)) {
-                    $signal = pcntl_wtermsig($status);
-                    throw new RuntimeException("Child process terminated by signal: $signal");
-                }
-                return;
+                usleep(100000); // Sleep 100ms
             }
-            usleep(100000); // Sleep 100ms
+        } finally {
+            $this->untrackChild($pid);
         }
-
         // Timeout reached
         posix_kill($pid, SIGTERM);
         throw new RuntimeException("Child process timed out");
@@ -174,6 +182,12 @@ class WorkerApiCommands extends WorkerBase
             }
 
             cli_set_process_title(__CLASS__ . '-' . $request['action']);
+
+            SystemMessages::sysLogMsg(
+                __CLASS__,
+                json_encode($request, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
+                LOG_DEBUG
+            );
 
             // Execute request based on async flag
             if ($async) {
@@ -245,6 +259,42 @@ class WorkerApiCommands extends WorkerBase
         }
 
         return $processor;
+    }
+
+    /**
+     * Start xdebug session if request called with special header: "X-Debug-The-Request"
+     *
+     * Add xdebug.start_with_request = trigger to xdebug.ini
+     *
+     * @examples
+     * curl -X POST \
+     * -H 'Content-Type: application/json' \
+     * -H 'Cookie: XDEBUG_SESSION=PHPSTORM' \
+     * -H 'X-Debug-The-Request: 1' \
+     * -d '{"filename": "/storage/usbdisk1/mikopbx/tmp/mikopbx-2023.1.223-x86_64.img"}' \
+     * http://127.0.0.1/pbxcore/api/system/upgrade
+     *
+     * Or add a header at any semantic API request
+     * $.api({
+     *      url: ...,
+     *      on: 'now',
+     *      method: 'POST',
+     *      beforeXHR(xhr) {
+     *          xhr.setRequestHeader ('X-Debug-The-Request', 1);
+     *          return xhr;
+     *      },
+     *      ...
+     * });
+     */
+    private function handleDebugMode(array $request): void
+    {
+        if (isset($request['debug']) && $request['debug'] === true && extension_loaded('xdebug')) {
+            if (function_exists('xdebug_connect_to_client')) {
+                if (xdebug_connect_to_client()) {
+                    xdebug_break();
+                }
+            }
+        }
     }
 
     /**
@@ -338,20 +388,6 @@ class WorkerApiCommands extends WorkerBase
     }
 
     /**
-     * Handle error cases
-     *
-     * @param PBXApiResult $res
-     * @param string $message
-     */
-    private function handleError(PBXApiResult $res, string $message): void
-    {
-        $res->success = false;
-        $res->messages['error'][] = $message;
-        $res->data = [];
-    }
-
-
-    /**
      * Checks if the module or worker needs to be reloaded.
      *
      * @param array $request
@@ -367,6 +403,11 @@ class WorkerApiCommands extends WorkerBase
                     && $action === $request['action']
                 ) {
                     $this->needRestart = true;
+                    SystemMessages::sysLogMsg(
+                        static::class,
+                        "Service asked for restart all workers",
+                        LOG_DEBUG
+                    );
                     Processes::restartAllWorkers();
                     return;
                 }
@@ -394,39 +435,97 @@ class WorkerApiCommands extends WorkerBase
     }
 
     /**
-     * Start xdebug session if request called with special header: "X-Debug-The-Request"
+     * Handle error cases
      *
-     * Add xdebug.start_with_request = trigger to xdebug.ini
-     *
-     * @examples
-     * curl -X POST \
-     * -H 'Content-Type: application/json' \
-     * -H 'Cookie: XDEBUG_SESSION=PHPSTORM' \
-     * -H 'X-Debug-The-Request: 1' \
-     * -d '{"filename": "/storage/usbdisk1/mikopbx/tmp/mikopbx-2023.1.223-x86_64.img"}' \
-     * http://127.0.0.1/pbxcore/api/system/upgrade
-     *
-     * Or add a header at any semantic API request
-     * $.api({
-     *      url: ...,
-     *      on: 'now',
-     *      method: 'POST',
-     *      beforeXHR(xhr) {
-     *          xhr.setRequestHeader ('X-Debug-The-Request', 1);
-     *          return xhr;
-     *      },
-     *      ...
-     * });
+     * @param PBXApiResult $res
+     * @param string $message
      */
-    private function handleDebugMode(array $request): void
+    private function handleError(PBXApiResult $res, string $message): void
     {
-        if (isset($request['debug']) && $request['debug'] === true && extension_loaded('xdebug')) {
-            if (function_exists('xdebug_connect_to_client')) {
-                if (xdebug_connect_to_client()) {
-                    xdebug_break();
+        $res->success = false;
+        $res->messages['error'][] = $message;
+        $res->data = [];
+    }
+
+    /**
+     * Track new child process
+     */
+    private function trackChild(int $pid): void
+    {
+        $this->childPids[$pid] = time();
+    }
+
+    /**
+     * Register signal handlers
+     */
+    private function setupSignalHandlers(): void
+    {
+        pcntl_signal(SIGTERM, [$this, 'handleSignal']);
+        pcntl_signal(SIGUSR1, [$this, 'handleSignal']);
+        pcntl_signal(SIGINT, [$this, 'handleSignal']);
+    }
+
+    /**
+     * Handle termination signals
+     */
+    public function handleSignal(int $signal): void
+    {
+        SystemMessages::sysLogMsg(
+            self::class,
+            "Received signal: $signal. Waiting for child processes..."
+        );
+
+        // Set flag to stop accepting new requests
+        $this->needRestart = true;
+
+        // Wait for all child processes to finish
+        $this->waitForChildren();
+
+        sleep (5);
+        exit(0);
+    }
+
+    /**
+     * Wait for all child processes to finish
+     */
+    private function waitForChildren(): void
+    {
+
+        while (!empty($this->childPids)) {
+            foreach ($this->childPids as $pid => $startTime) {
+
+                SystemMessages::sysLogMsg(
+                    self::class,
+                    "Child $pid CHECK STATUS"
+                );
+                // Check if process has finished
+                $res = pcntl_waitpid($pid, $status, WNOHANG);
+
+                if ($res === $pid) {
+                    $this->untrackChild($pid);
+                    continue;
+                }
+
+                // Check for timeout
+                if (time() - $startTime > self::CHILD_PROCESS_TIMEOUT) {
+                    SystemMessages::sysLogMsg(
+                        self::class,
+                        "Child $pid timed out, sending SIGTERM"
+                    );
+                    posix_kill($pid, SIGTERM);
+                    $this->untrackChild($pid);
                 }
             }
+            sleep(1);
         }
+    }
+
+    /**
+     * Remove finished child from tracking
+     */
+    private function untrackChild(int $pid): void
+    {
+        unset($this->childPids[$pid]);
     }
 }
 

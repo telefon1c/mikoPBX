@@ -6,6 +6,7 @@ use MikoPBX\Common\Models\PbxExtensionModules;
 use MikoPBX\Common\Providers\ModulesDBConnectionsProvider;
 use MikoPBX\Common\Providers\PBXConfModulesProvider;
 use MikoPBX\Core\Asterisk\Configs\AsteriskConfigInterface;
+use MikoPBX\Core\System\Processes;
 use MikoPBX\Core\Workers\WorkerModelsEvents;
 use MikoPBX\Modules\Config\ConfigClass;
 use MikoPBX\Modules\Config\SystemConfigInterface;
@@ -55,6 +56,8 @@ class ReloadModuleStateAction implements ReloadActionInterface
             $configClassObj = new $configClassName();
             $this->handleModuleConfigChanges($configClassObj, $moduleRecord);
         }
+
+        Processes::restartAllWorkers();
     }
 
     /**

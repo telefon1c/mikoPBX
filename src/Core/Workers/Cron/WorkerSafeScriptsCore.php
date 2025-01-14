@@ -135,12 +135,6 @@ class WorkerSafeScriptsCore extends WorkerBase
                 $totalWorkers += count($workers);
             }
 
-            SystemMessages::sysLogMsg(
-                __CLASS__,
-                "Starting restart operation for {$totalWorkers} workers",
-                LOG_INFO
-            );
-
             $childPids = [];
             $currentBatch = [];
 

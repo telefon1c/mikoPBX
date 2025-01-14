@@ -22,6 +22,7 @@ namespace MikoPBX\PBXCoreREST\Lib\Modules;
 
 use MikoPBX\Common\Providers\PBXCoreRESTClientProvider;
 use MikoPBX\Core\System\Processes;
+use MikoPBX\Core\System\SystemMessages;
 use MikoPBX\Core\System\Util;
 use MikoPBX\Modules\PbxExtensionUtils;
 use MikoPBX\PBXCoreREST\Lib\Files\FilesConstants;
@@ -143,6 +144,12 @@ class ModuleInstallationBase extends Injectable
             'stageDetails' => $data,
             'pid' => posix_getpid()
         ];
+
+        SystemMessages::sysLogMsg(
+            __CLASS__,
+            json_encode($message, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
+            LOG_DEBUG
+        );
 
         $di = Di::getDefault();
         $di->get(PBXCoreRESTClientProvider::SERVICE_NAME, [

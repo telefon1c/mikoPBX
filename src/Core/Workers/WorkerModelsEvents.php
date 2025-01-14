@@ -85,7 +85,7 @@ ini_set('display_startup_errors', 1);
  */
 class WorkerModelsEvents extends WorkerBase
 {
-private const ACTION_TIMEOUT = 30;
+private const int ACTION_TIMEOUT = 30;
         private bool $isProcessing = false; // seconds
     private int $last_change;
 

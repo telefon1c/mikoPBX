@@ -108,8 +108,6 @@ class WorkerModuleInstaller extends WorkerBase
                 $setup = new $pbxExtensionSetupClass($moduleUniqueID);
                 if ( ! $setup->installModule()) {
                     file_put_contents($this->error_file, implode(" ", $setup->getMessages()), FILE_APPEND);
-                } else {
-                    Processes::restartAllWorkers();
                 }
             } catch (Throwable $e){
                 file_put_contents($this->error_file, 'Exception on installNewModuleFromFile: ' . $e->getMessage(), FILE_APPEND);
