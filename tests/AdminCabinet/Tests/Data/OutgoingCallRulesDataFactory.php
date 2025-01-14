@@ -57,7 +57,7 @@ class OutgoingCallRulesDataFactory
             'restnumbers' => '10',
             'trimfrombegin' => '0',
             'prepend' => '7',
-            'providerid' => '',
+            'providerid' => 'SIP-1683372744',
             'providerName' => 'Provider for CTI tests',
             'type' => 'Test',
             'description' => 'Basic CTI test rule'
@@ -69,7 +69,7 @@ class OutgoingCallRulesDataFactory
             'restnumbers' => '10',
             'trimfrombegin' => '0',
             'prepend' => '',
-            'providerid' => '',
+            'providerid' => 'SIP-1683372744',
             'providerName' => 'Provider for CTI tests',
             'type' => 'Test',
             'description' => 'Complex CTI test rule with IVR logic'

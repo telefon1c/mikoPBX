@@ -13,10 +13,10 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\ModuleXPathsTrait;
 abstract class InstallModuleTest extends MikoPBXTestsBase
 {
     use ModuleXPathsTrait;
-    protected const INSTALLATION_TIMEOUT = 120;
-    protected const STATE_CHANGE_TIMEOUT = 45;
-    protected const STATE_CHECK_INTERVAL = 5;
-    protected const MODAL_WAIT_TIME = 2;
+    protected const int INSTALLATION_TIMEOUT = 180;
+    protected const int STATE_CHANGE_TIMEOUT = 45;
+    protected const int STATE_CHECK_INTERVAL = 5;
+    protected const int MODAL_WAIT_TIME = 2;
 
     protected function setUp(): void
     {

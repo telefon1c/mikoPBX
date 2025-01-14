@@ -98,8 +98,8 @@ class DeleteExtensionTest extends MikoPBXTestsBase
     public function additionProvider(): array
     {
         $params = [];
-        $params['alexandra.pushina'] = EmployeeDataFactory::getEmployeeData('alexandra.pushina');
-        $params['smith.james'] = EmployeeDataFactory::getEmployeeData('smith.james');
+        $params['alexandra.pushina'] = [EmployeeDataFactory::getEmployeeData('alexandra.pushina')];
+        $params['smith.james'] = [EmployeeDataFactory::getEmployeeData('smith.james')];
         return $params;
     }
 }

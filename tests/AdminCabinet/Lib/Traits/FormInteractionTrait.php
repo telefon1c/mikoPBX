@@ -414,6 +414,59 @@ trait FormInteractionTrait
         }
     }
 
+ /**
+     * Check if element exists in dropdown menu with improved Semantic UI support
+     *
+     * @param string $name Dropdown name
+     * @param string $value Value to check
+     * @return bool
+     */
+    protected function checkIfElementExistOnDropdownMenu(string $name, string $value): bool
+    {
+        $this->logTestAction("Check dropdown element", ['name' => $name, 'value' => $value]);
+
+        try {
+              // XPath for both standard select and Semantic UI dropdown
+            $xpath = sprintf(
+                '//select[@name="%1$s"]/ancestor::div[contains(@class, "dropdown")] | ' .
+                '//input[@name="%1$s"]/ancestor::div[contains(@class, "dropdown")] | ' .
+                '//div[contains(@class, "dropdown")][@id="%1$s"] | ' .
+                '//div[contains(@class, "dropdown")][.//select[@name="%1$s"]]',
+                $name
+            );
+
+            $dropdown = $this->findElementSafely($xpath);
+
+
+            // Click to open dropdown
+            $this->scrollIntoView($dropdown);
+            $dropdown->click();
+            usleep(self::DROPDOWN_CLICK_DELAY * 1000);
+
+            // Wait for dropdown menu to be visible
+            $this->waitForDropdownMenu();
+
+            // Look for item by both data-value and text content
+            $menuXpath = sprintf(
+                '//div[contains(@class, "menu") and contains(@class, "visible")]' .
+                '//div[contains(@class, "item") and (@data-value="%s" or normalize-space(text())="%s")]',
+                $value,
+                $value
+            );
+
+            $menuItem = $this->findElementSafely($menuXpath);
+
+            // Close dropdown after check
+            self::$driver->executeScript("arguments[0].click();", [$dropdown]);
+
+            return $menuItem !== null;
+
+        } catch (\Exception $e) {
+            self::annotate("Element check failed: " . $e->getMessage(), 'warning');
+            return false;
+        }
+    }
+
 
     /**
      * Find dropdown element and check its current state
@@ -427,6 +480,7 @@ trait FormInteractionTrait
         // XPath for both standard select and Semantic UI dropdown
         $xpath = sprintf(
             '//select[@name="%1$s"]/ancestor::div[contains(@class, "dropdown")] | ' .
+            '//input[@name="%1$s"]/ancestor::div[contains(@class, "dropdown")] | ' .
             '//div[contains(@class, "dropdown")][@id="%1$s"] | ' .
             '//div[contains(@class, "dropdown")][.//select[@name="%1$s"]]',
             $name

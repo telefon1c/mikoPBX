@@ -52,15 +52,15 @@ trait ElementInteractionTrait
     /**
      * Interact with element using specified action
      *
-     * @param string $selector Element selector (xpath)
+     * @param string $xpath Element selector (xpath)
      * @param string $action Action to perform
      * @param array $options Interaction options
      * @throws RuntimeException
      */
     protected function interactWithElement(
-        string $selector,
+        string $xpath,
         string $action,
-        array $options = []
+        array  $options = []
     ): void {
         $defaultOptions = [
             'timeout' => self::ELEMENT['timeouts']['presence'],
@@ -74,13 +74,13 @@ trait ElementInteractionTrait
 
         try {
             $this->executeWithRetry(
-                function () use ($selector, $action, $options) {
+                function () use ($xpath, $action, $options) {
                     $element = $options['waitForElement']
-                        ? $this->waitForElement($selector, $options['timeout'])
-                        : $this->findElementSafely($selector);
+                        ? $this->waitForElement($xpath, $options['timeout'])
+                        : $this->findElementSafely($xpath);
 
                     if (!$element) {
-                        throw new NoSuchElementException("Element not found: $selector");
+                        throw new NoSuchElementException("Element not found: $xpath");
                     }
 
                     if ($options['scroll']) {
@@ -96,7 +96,7 @@ trait ElementInteractionTrait
                 $options['retries']
             );
         } catch (\Exception $e) {
-            $this->handleActionError("element $action", $selector, $e);
+            $this->handleActionError("element $action", $xpath, $e);
         }
     }
 
@@ -144,46 +144,6 @@ trait ElementInteractionTrait
         }
     }
 
-    /**
-     * Check if element exists in dropdown menu with improved Semantic UI support
-     *
-     * @param string $name Dropdown name
-     * @param string $value Value to check
-     * @return bool
-     */
-    protected function checkIfElementExistOnDropdownMenu(string $name, string $value): bool
-    {
-        $this->logTestAction("Check dropdown element", ['name' => $name, 'value' => $value]);
-
-        try {
-            $dropdown = $this->findAndClickDropdown($name, false);
-            if (!$dropdown) {
-                return false;
-            }
-
-            // Wait for dropdown menu to be fully visible
-            $this->waitForDropdownMenu();
-
-            // Look for item by both data-value and text content
-            $menuXpath = sprintf(
-                '//div[contains(@class, "menu") and contains(@class, "visible")]' .
-                '//div[contains(@class, "item") and (@data-value="%s" or normalize-space(text())="%s")]',
-                $value,
-                $value
-            );
-
-            $menuItem = $this->findElementSafely($menuXpath);
-
-            // Close dropdown after check
-            self::$driver->executeScript("arguments[0].click();", [$dropdown]);
-
-            return $menuItem !== null;
-
-        } catch (\Exception $e) {
-            self::annotate("Element check failed: " . $e->getMessage(), 'warning');
-            return false;
-        }
-    }
 
     /**
      * Get current record ID from form
@@ -259,7 +219,7 @@ trait ElementInteractionTrait
             );
 
             $this->waitForAjax();
-            usleep(500000); // Wait for DataTable redraw
+            sleep(2);; // Wait for DataTable redraw
         } catch (\Exception $e) {
             $this->handleActionError('fill datatable search', $name, $e);
         }
@@ -274,7 +234,6 @@ trait ElementInteractionTrait
      *
      * @param WebDriverElement $element Target element
      * @param string $action Action to perform
-     * @throws ElementNotInteractableException
      */
     private function performElementAction(WebDriverElement $element, string $action): void
     {
@@ -325,7 +284,7 @@ trait ElementInteractionTrait
      * @param string $xpath Element xpath
      * @param int $timeout Timeout in seconds
      * @return WebDriverElement
-     * @throws TimeoutException
+     * @throws TimeoutException|NoSuchElementException
      */
     protected function waitForElement(
         string $xpath,

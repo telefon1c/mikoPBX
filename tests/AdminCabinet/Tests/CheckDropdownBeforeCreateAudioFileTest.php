@@ -36,7 +36,7 @@ class CheckDropdownBeforeCreateAudioFileTest extends MikoPBXTestsBase
     /**
      * Path to the recording settings page
      */
-    private const RECORDING_SETTINGS_PATH = '/admin-cabinet/general-settings/modify/#/recording';
+    private const string RECORDING_SETTINGS_PATH = '/admin-cabinet/general-settings/modify/#/recording';
 
     /**
      * Set up before each test

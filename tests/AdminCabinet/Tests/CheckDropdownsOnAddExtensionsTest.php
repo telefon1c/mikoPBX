@@ -34,15 +34,6 @@ class CheckDropdownsOnAddExtensionsTest extends MikoPBXTestsBase
     private array $employeeData;
 
     /**
-     * Set up before class
-     */
-    public static function setUpBeforeClass(): void
-    {
-        parent::setUpBeforeClass();
-        self::$isLoggedIn = false;
-    }
-
-    /**
      * Set up before each test
      *
      * @throws GuzzleException

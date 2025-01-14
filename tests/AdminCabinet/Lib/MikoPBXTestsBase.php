@@ -55,7 +55,6 @@ class MikoPBXTestsBase extends BrowserStackTest
     {
         error_log("[BrowserStack] Starting setUp in MikoPBXTestsBase");
         parent::setUp();
-        
         // Perform login if not already logged in
         if (!self::$isLoggedIn) {
             error_log("[BrowserStack] Performing login");

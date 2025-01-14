@@ -29,10 +29,6 @@ use MikoPBX\Tests\AdminCabinet\Tests\Traits\LoginTrait;
  */
 abstract class CreateCallQueueTest extends MikoPBXTestsBase
 {
-    use LoginTrait;
-
-    private static bool $isLoggedIn = false;
-
     protected function setUp(): void
     {
         parent::setUp();
