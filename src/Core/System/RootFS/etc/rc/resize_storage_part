@@ -165,5 +165,5 @@ perform_fs_operations() {
 perform_fs_operations "$partitionName";
 
 echo " - Resize of the storage disk was successfully done.";
-sleep 5;
-exit 0;
+sleep 1;
+reboot;
