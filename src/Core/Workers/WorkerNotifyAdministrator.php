@@ -28,11 +28,11 @@ use Phalcon\Di\Di;
 use Throwable;
 
 /**
- * WorkerNotifyError is a worker class responsible for checking the significant advice messages and sent it to system administrator.
+ * WorkerNotifyAdministrator is a worker class responsible for checking the significant advice messages and sent it to system administrator.
  *
  * @package MikoPBX\Core\Workers
  */
-class WorkerNotifyError extends WorkerBase
+class WorkerNotifyAdministrator extends WorkerBase
 {
     /**
      * Starts the errors notifier worker.
@@ -42,7 +42,7 @@ class WorkerNotifyError extends WorkerBase
      */
     public function start(array $argv): void
     {
-        $cacheKey = 'Workers:WorkerNotifyError:lastErrorsCheck';
+        $cacheKey = 'Workers:WorkerNotifyAdministrator:lastErrorsCheck';
         $managedCache = $this->di->get(ManagedCacheProvider::SERVICE_NAME);
 
         // Retrieve the last error check timestamp from the cache
@@ -71,4 +71,4 @@ class WorkerNotifyError extends WorkerBase
 }
 
 // Start a worker process
-WorkerNotifyError::startWorker($argv ?? []);
+WorkerNotifyAdministrator::startWorker($argv ?? []);

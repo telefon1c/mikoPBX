@@ -33,7 +33,7 @@ use MikoPBX\Core\Workers\WorkerLogRotate;
 use MikoPBX\Core\Workers\WorkerMarketplaceChecker;
 use MikoPBX\Core\Workers\WorkerModelsEvents;
 use MikoPBX\Core\Workers\WorkerNotifyByEmail;
-use MikoPBX\Core\Workers\WorkerNotifyError;
+use MikoPBX\Core\Workers\WorkerNotifyAdministrator;
 use MikoPBX\Core\Workers\WorkerPrepareAdvice;
 use MikoPBX\Core\Workers\WorkerRemoveOldRecords;
 use MikoPBX\Modules\Config\SystemConfigInterface;
@@ -321,7 +321,7 @@ class WorkerSafeScriptsCore extends WorkerBase
                 WorkerCallEvents::class,
                 WorkerModelsEvents::class,
                 WorkerNotifyByEmail::class,
-                WorkerNotifyError::class,
+                WorkerNotifyAdministrator::class,
             ],
             self::CHECK_BY_PID_NOT_ALERT => [
                 WorkerMarketplaceChecker::class,
