@@ -463,7 +463,12 @@ class WorkerSafeScriptsCore extends WorkerBase
                 SystemMessages::sysLogMsg(__METHOD__, "Service $workerClassName is alive. Sending ping request.", LOG_DEBUG);
                 $queue = new BeanstalkClient($this->makePingTubeName($workerClassName));
                 [$result] = $queue->sendRequest('ping', 5, 1);
-                SystemMessages::sysLogMsg(__METHOD__, "Service $workerClassName answered $result", LOG_DEBUG);
+                if ($result) {
+                    SystemMessages::sysLogMsg(__METHOD__, "Service $workerClassName answered pong", LOG_DEBUG);
+                } else {
+                    SystemMessages::sysLogMsg(__METHOD__, "Service $workerClassName not answered", LOG_DEBUG);
+                }
+
 
             }
             if (false === $result) {

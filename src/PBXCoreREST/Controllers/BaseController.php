@@ -25,6 +25,7 @@ namespace MikoPBX\PBXCoreREST\Controllers;
 use MikoPBX\Common\Handlers\CriticalErrorsHandler;
 use MikoPBX\Common\Providers\BeanstalkConnectionWorkerApiProvider;
 use MikoPBX\Core\System\BeanstalkClient;
+use MikoPBX\Core\System\SystemMessages;
 use MikoPBX\PBXCoreREST\Http\Response;
 use MikoPBX\PBXCoreREST\Lib\PbxExtensionsProcessor;
 use Phalcon\Filter\Filter;
@@ -81,6 +82,7 @@ class BaseController extends Controller
                     $this->response->setPayloadSuccess($response);
                 }
             } else {
+                SystemMessages::sysLogMsg(__METHOD__, "Empty response from BeanstalkQueue on $message", LOG_ERR);
                 $this->sendError(Response::INTERNAL_SERVER_ERROR);
             }
         } catch (Throwable $e) {
