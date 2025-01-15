@@ -73,7 +73,8 @@ class WorkerMarketplaceChecker extends WorkerBase
             && Text::startsWith($licenseKey, 'MIKO-')
             )
         ) {
-            $lastGetLicenseInfo = $managedCache->get(self::CACHE_KEY_LICENSE_INFO . ':' . $licenseKey);
+            $getLicenseInfoCacheKey =   self::CACHE_KEY_LICENSE_INFO . ':' . $licenseKey;
+            $lastGetLicenseInfo = $managedCache->get($getLicenseInfoCacheKey);
             if ($lastGetLicenseInfo === null) {
                 $regInfo = $lic->getLicenseInfo($licenseKey);
                 if ($regInfo["success"]) {
@@ -85,7 +86,7 @@ class WorkerMarketplaceChecker extends WorkerBase
                     }
                 }
             }
-            $managedCache->set(self::CACHE_KEY_LICENSE_INFO, time(), 86400 + $randomTTLShift); // Check every day
+            $managedCache->set($getLicenseInfoCacheKey, time(), 86400 + $randomTTLShift); // Check every day
         }
     }
 }
