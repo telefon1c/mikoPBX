@@ -19,15 +19,15 @@
 
 namespace MikoPBX\Tests\Core\Workers;
 
-use MikoPBX\Core\Workers\WorkerNotifyError;
+use MikoPBX\Core\Workers\WorkerNotifyAdministrator;
 use PHPUnit\Framework\TestCase;
 
-class WorkerNotifyErrorTest extends TestCase
+class WorkerNotifyAdministratorTest extends TestCase
 {
 
     public function testStart()
     {
-        $worker = new WorkerNotifyError();
+        $worker = new WorkerNotifyAdministrator();
         $worker->start(['start']);
         $this->assertTrue(true);
     }
