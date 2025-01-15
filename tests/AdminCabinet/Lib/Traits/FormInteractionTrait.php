@@ -19,12 +19,12 @@ trait FormInteractionTrait
     /**
      * Wait timeout for dropdown menu to become visible (in seconds)
      */
-    private const DROPDOWN_MENU_TIMEOUT = 10;
+    private const int DROPDOWN_MENU_TIMEOUT = 10;
 
     /**
      * Additional delay after dropdown click before continuing (in milliseconds)
      */
-    private const DROPDOWN_CLICK_DELAY = 500;
+    private const int DROPDOWN_CLICK_DELAY = 500;
 
     /**
      * Form field types mapping
@@ -387,14 +387,13 @@ trait FormInteractionTrait
                 // Click to open dropdown
                 $this->scrollIntoView($dropdown);
                 $dropdown->click();
-                usleep(self::DROPDOWN_CLICK_DELAY * 1000);
 
                 // Wait for dropdown menu to be visible
                 $this->waitForDropdownMenu();
 
                 // Select item from visible menu
                 $menuXpath = '//div[contains(@class, "menu") and contains(@class, "visible")]' .
-                    '//div[contains(@class, "item") and (@data-value="%s" or normalize-space(text())="%s")]';
+                    '//div[contains(@class, "item") and (@data-value="%s" or contains(normalize-space(text()),"%s"))]';
 
                 $menuXpath = sprintf($menuXpath, $value, $value);
 
@@ -441,7 +440,6 @@ trait FormInteractionTrait
             // Click to open dropdown
             $this->scrollIntoView($dropdown);
             $dropdown->click();
-            usleep(self::DROPDOWN_CLICK_DELAY * 1000);
 
             // Wait for dropdown menu to be visible
             $this->waitForDropdownMenu();
@@ -449,7 +447,7 @@ trait FormInteractionTrait
             // Look for item by both data-value and text content
             $menuXpath = sprintf(
                 '//div[contains(@class, "menu") and contains(@class, "visible")]' .
-                '//div[contains(@class, "item") and (@data-value="%s" or normalize-space(text())="%s")]',
+                '//div[contains(@class, "item") and (@data-value="%s" or contains(normalize-space(text()),"%s"))]',
                 $value,
                 $value
             );
@@ -516,10 +514,11 @@ trait FormInteractionTrait
     /**
      * Wait for dropdown menu to become visible
      *
-     * @throws \Facebook\WebDriver\Exception\TimeoutException
+     * @throws \Facebook\WebDriver\Exception\TimeoutException|NoSuchElementException
      */
     private function waitForDropdownMenu(): void
     {
+        usleep(self::DROPDOWN_CLICK_DELAY * 1000);
         self::$driver->wait(self::DROPDOWN_MENU_TIMEOUT)->until(
             WebDriverExpectedCondition::visibilityOfElementLocated(
                 WebDriverBy::xpath('//div[contains(@class, "menu") and contains(@class, "visible")]')
