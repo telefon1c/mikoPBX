@@ -21,6 +21,7 @@
 namespace MikoPBX\Core\System\Configs;
 
 use MikoPBX\Common\Models\PbxSettings;
+use MikoPBX\Common\Providers\ConfigProvider;
 use MikoPBX\Core\System\Directories;
 use MikoPBX\Core\System\MikoPBXConfig;
 use MikoPBX\Core\System\Util;
@@ -70,8 +71,8 @@ class NatsConf extends Injectable
         $settings = [
             'port'             => $config->port,
             'http_port'        => $config->httpPort,
-            'debug'            => 'false',
-            'trace'            => 'false',
+            'debug'            => $config->debug?'true':'false',
+            'trace'            => $config->debug?'true':'false',
             'logtime'          => 'true',
             'pid_file'         => $pid_file,
             'max_connections'  => '1000',

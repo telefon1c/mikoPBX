@@ -10,7 +10,8 @@
   "gnats": {
     "host": "127.0.0.1",
     "port": 4223,
-    "httpPort": 8223
+    "httpPort": 8223,
+    "debug": true
   },
   "asterisk": {
     "astvarlibdir" : "/offload/asterisk",
