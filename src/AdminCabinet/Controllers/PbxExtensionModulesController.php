@@ -63,7 +63,7 @@ class PbxExtensionModulesController extends BaseController
                 if ($moduleRecord['disableReason'] === PbxExtensionState::DISABLED_BY_LICENSE) {
                     $lic = $this->di->getShared(MarketPlaceProvider::SERVICE_NAME);
                     $moduleRecord['disableReasonText']
-                        = $lic->translateLicenseErrorMessage((string)$moduleRecord['disableReasonText']);
+                        = htmlspecialchars($lic->translateLicenseErrorMessage((string)$moduleRecord['disableReasonText']));
                 }
             }
             $moduleList[] = $moduleRecord;
