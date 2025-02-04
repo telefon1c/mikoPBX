@@ -48,6 +48,7 @@ class Fail2BanConf extends Injectable
     private const string JAILS_DIR       = '/etc/fail2ban/jail.d';
     private const string PID_FILE        = '/var/run/fail2ban/fail2ban.pid';
     public const string FAIL2BAN_DB_PATH = '/var/lib/fail2ban/fail2ban.sqlite3';
+    public const string FAIL2BAN_DB_DIR_PATH = '/var/lib/fail2ban';
 
     public bool $fail2ban_enable;
     private array $allPbxSettings;
@@ -236,46 +237,45 @@ class Fail2BanConf extends Injectable
      */
     public function fail2banMakeDirs(): string
     {
-        $res_file = self::FAIL2BAN_DB_PATH;
-        $filename = basename($res_file);
-
+        $res_file = self::FAIL2BAN_DB_DIR_PATH;
         $old_dir_db = '/cf/fail2ban';
         $dir_db     = $this->di->getShared('config')->path('core.fail2banDbDir');
         if (empty($dir_db)) {
             $dir_db = '/var/spool/fail2ban';
         }
+        // Create working directories.
+        Util::mwMkdir(dirname($res_file));
         Util::mwMkdir($dir_db);
 
-        // Create working directories.
-        $db_bd_dir = dirname($res_file);
-        Util::mwMkdir($db_bd_dir);
-
         $create_link = false;
-
         // Symbolic link to the database.
         if (file_exists($res_file)) {
+            $mvPath = Util::which('mv');
             if (filetype($res_file) !== 'link') {
+                Processes::mwExec("$mvPath '$res_file'/* '$dir_db'");
                 unlink($res_file);
                 $create_link = true;
-            } elseif (readlink($res_file) === "$old_dir_db/$filename") {
+            } elseif (readlink($res_file) === "$old_dir_db") {
                 unlink($res_file);
                 $create_link = true;
-                if (file_exists("$old_dir_db/$filename")) {
+                if (file_exists("$old_dir_db")) {
                     // Move the file to the new location.
-                    $mvPath = Util::which('mv');
-                    Processes::mwExec("$mvPath '$old_dir_db/$filename' '$dir_db/$filename'");
+                    Processes::mwExec("$mvPath '$old_dir_db'/* '$dir_db'");
                 }
             }
-        } else {
-            $sqlite3Path = Util::which('sqlite3');
-            Processes::mwExec("$sqlite3Path $dir_db/$filename 'vacuum'");
+        }else{
             $create_link = true;
         }
 
         if ($create_link === true) {
-            Util::createUpdateSymlink("$dir_db/$filename", $res_file);
+            Util::createUpdateSymlink("$dir_db", $res_file);
         }
 
+        $filename = basename(self::FAIL2BAN_DB_PATH);
+        if(file_exists("$dir_db/$filename")) {
+            $sqlite3Path = Util::which('sqlite3');
+            Processes::mwExec("$sqlite3Path $dir_db/$filename 'vacuum'");
+        }
         return $res_file;
     }
 
