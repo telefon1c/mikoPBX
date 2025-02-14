@@ -37,6 +37,17 @@ const fail2BanIndex = {
     $bannedIpListTable: $('#banned-ip-list-table'),
 
     /**
+     * jQuery object Maximum number of requests.
+     * @type {jQuery}
+     */
+    $maxReqSlider: $('#PBXFirewallMaxReqSec'),
+
+    /**
+     * Possible period values for the records retention.
+     */
+    maxReqValue: ['10', '30', '100', '300', '0'],
+
+    /**
      * The list of banned IPs
      * @type {Datatable}
      */
@@ -82,7 +93,7 @@ const fail2BanIndex = {
             identifier: 'bantime',
             rules: [
                 {
-                    type: 'integer[300..86400]',
+                    type: 'integer[300..259200]',
                     prompt: globalTranslate.f2b_ValidateBanTimeRange,
                 },
             ],
@@ -102,7 +113,45 @@ const fail2BanIndex = {
             fail2BanIndex.$bannedIpListTable.addClass('loading');
             PbxApi.FirewallUnBanIp(unbannedIp, fail2BanIndex.cbAfterUnBanIp);
         });
+
+        // Initialize records save period slider
+        fail2BanIndex.$maxReqSlider
+            .slider({
+                min: 0,
+                max: 4,
+                step: 1,
+                smooth: true,
+                interpretLabel: function (value) {
+                    let labels = [
+                        globalTranslate.f2b_MaxReqSec10,
+                        globalTranslate.f2b_MaxReqSec30,
+                        globalTranslate.f2b_MaxReqSec100,
+                        globalTranslate.f2b_MaxReqSec300,
+                        globalTranslate.gs_StoreAllPossibleRecords,
+                    ];
+                    return labels[value];
+                },
+                onChange: fail2BanIndex.cbAfterSelectMaxReqSlider,
+            })
+        ;
+        const maxReq = fail2BanIndex.$formObj.form('get value', 'PBXFirewallMaxReqSec');
+        fail2BanIndex.$maxReqSlider
+            .slider('set value', fail2BanIndex.maxReqValue.indexOf(maxReq), false);
     },
+
+    /**
+     * Handle event after the select save period slider is changed.
+     * @param {number} value - The selected value from the slider.
+     */
+    cbAfterSelectMaxReqSlider(value) {
+        // Get the save period corresponding to the slider value.
+        const maxReq = fail2BanIndex.maxReqValue[value];
+        // Set the form value for 'PBXRecordSavePeriod' to the selected save period.
+        fail2BanIndex.$formObj.form('set value', 'PBXFirewallMaxReqSec', maxReq);
+        // Trigger change event to acknowledge the modification
+        Form.dataChanged();
+    },
+
 
     /**
      * Initialize data table on the page

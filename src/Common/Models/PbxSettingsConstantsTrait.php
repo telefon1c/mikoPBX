@@ -121,6 +121,7 @@ trait PbxSettingsConstantsTrait
     // Firewall settings
     public const string PBX_FIREWALL_ENABLED = 'PBXFirewallEnabled';
     public const string PBX_FAIL2BAN_ENABLED = 'PBXFail2BanEnabled';
+    public const string PBX_FIREWALL_MAX_REQ = 'PBXFirewallMaxReqSec';
     public const string PBX_ALLOW_GUEST_CALLS = 'PBXAllowGuestCalls';
 
     // Miscellaneous settings

@@ -18,6 +18,16 @@
     <label>{{ t._('f2b_WhiteList') }}</label>
     {{ form.render('whitelist') }}
 </div>
+
+<div class="field">
+    <label>{{ t._('f2b_PBXFirewallMaxReqSec') }}</label>
+    <div class="ui">
+        <div class="ui segment slider" id="pbx-firewall-max-req-slider" style="padding-left: 35px;padding-right: 35px;margin-top: 5px;">
+            <div class="ui bottom aligned ticked labeled slider" id="PBXFirewallMaxReqSec"></div>
+            {{ form.render('PBXFirewallMaxReqSec') }}
+        </div>
+    </div>
+</div>
 {{ partial("PbxExtensionModules/hookVoltBlock",['arrayOfPartials':hookVoltBlock('Fields')]) }}
 
     {{ partial("partials/submitbutton") }}

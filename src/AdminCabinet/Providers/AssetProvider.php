@@ -739,12 +739,20 @@ class AssetProvider implements ServiceProviderInterface
     {
         if ($action === 'index') {
             $this->headerCollectionCSS->addCss('css/vendor/datatable/dataTables.semanticui.min.css', true)
+                ->addCss('css/vendor/semantic/slider.min.css', true)
+                ->addCss('css/vendor/semantic/progress.min.css', true)
                 ->addCss('css/vendor/datatable/responsive/responsive.semanticui.min.css', true);
+
+            $this->semanticCollectionJS
+                ->addJs('js/vendor/semantic/slider.js', true)
+                ->addJs('js/vendor/semantic/progress.min.js', true);
 
             $this->footerCollectionJS
                 ->addJs('js/vendor/datatable/dataTables.semanticui.js', true)
                 ->addJs('js/vendor/datatable/responsive/dataTables.responsive.min.js', true)
                 ->addJs('js/vendor/datatable/responsive/responsive.semanticui.min.js', true)
+                ->addJs('js/pbx/SoundFiles/sound-files-selector.js', true)
+                ->addJs('js/pbx/SoundFiles/one-button-sound-player.js', true)
                 ->addJs('js/pbx/main/form.js', true)
                 ->addJs('js/pbx/Fail2Ban/fail-to-ban-index.js', true);
         }

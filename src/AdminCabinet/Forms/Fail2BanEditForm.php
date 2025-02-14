@@ -62,5 +62,8 @@ class Fail2BanEditForm extends BaseForm
             PbxSettings::PBX_FAIL2BAN_ENABLED,
             intval($options[PbxSettings::PBX_FAIL2BAN_ENABLED]) === 1
         );
+
+        $this->add(new Hidden(PbxSettings::PBX_FIREWALL_MAX_REQ, ['value' => intval($options[PbxSettings::PBX_FIREWALL_MAX_REQ])]));
+
     }
 }

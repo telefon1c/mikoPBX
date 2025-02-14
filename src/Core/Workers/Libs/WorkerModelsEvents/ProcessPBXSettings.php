@@ -205,6 +205,7 @@ class ProcessPBXSettings extends Injectable
                 PbxSettings::SSH_PORT,
                 PbxSettings::PBX_FIREWALL_ENABLED,
                 PbxSettings::PBX_FAIL2BAN_ENABLED,
+                PbxSettings::PBX_FIREWALL_MAX_REQ,
             ],
             'actions' => [
                 ReloadFirewallAction::class,

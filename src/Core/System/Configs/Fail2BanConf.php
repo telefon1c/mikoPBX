@@ -55,10 +55,14 @@ class Fail2BanConf extends Injectable
 
     /**
      * Fail2Ban constructor.
+     * @param array $allPbxSettings
      */
-    public function __construct()
+    public function __construct(array $allPbxSettings = [])
     {
-        $this->allPbxSettings  = PbxSettings::getAllPbxSettings();
+        if(empty($allPbxSettings)){
+            $allPbxSettings = PbxSettings::getAllPbxSettings();
+        }
+        $this->allPbxSettings  = $allPbxSettings;
         $fail2ban_enable       = $this->allPbxSettings[PbxSettings::PBX_FAIL2BAN_ENABLED];
         $this->fail2ban_enable = ($fail2ban_enable === '1');
     }
