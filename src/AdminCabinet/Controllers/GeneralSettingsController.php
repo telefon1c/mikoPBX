@@ -294,6 +294,9 @@ class GeneralSettingsController extends BaseController
                 case PbxSettings::PBX_FEATURE_TRANSFER_DIGIT_TIMEOUT:
                     $newValue = ceil((int)$data[PbxSettings::PBX_FEATURE_DIGIT_TIMEOUT] / 1000);
                     break;
+                case PbxSettings::SIP_AUTH_PREFIX:
+                    $newValue = trim($data[$key]);
+                    break;
                 case PbxSettings::WEB_ADMIN_PASSWORD:
                     if ($data[$key] !== GeneralSettingsEditForm::HIDDEN_PASSWORD) {
                         $newValue = $this->security->hash($data[$key]);

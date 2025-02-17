@@ -24,6 +24,12 @@
     </div>
 </div>
 <div class="field">
+    <label>{{ t._('gs_SIPAuthPrefix') }}</label>
+    <div class="field max-width-400">
+        {{ form.render('SIPAuthPrefix') }}
+    </div>
+</div>
+<div class="field">
     <div class="ui segment">
         <div class="ui toggle checkbox">
             <label>{{ t._('gs_UseWebRTC') }}</label>

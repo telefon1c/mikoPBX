@@ -214,6 +214,8 @@ return [
     'pr_RTPPortTo' => 'по',
     'pr_Note' => 'Заметка или полезная информация о провайдере',
     'gs_RTPStunServer' => 'Адрес STUN сервера (пример: stun.test.net:10000)',
+    'gs_SIPAuthPrefix' => 'Префикс Auth Username для авторизации. Префикс будет добавлен в конец Username.',
+    'gs_SIPAuthPrefixInvalid' => 'Префикс Auth Username может содержать только латинские буквы.',
     'gs_UseWebRTC' => 'Использовать WebRTC',
     'gs_Store1MonthOfRecords' => '1 месяц',
     'gs_Store3MonthsOfRecords' => '3 месяца',

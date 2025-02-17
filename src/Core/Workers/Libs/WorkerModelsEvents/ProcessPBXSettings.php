@@ -150,6 +150,7 @@ class ProcessPBXSettings extends Injectable
                 PbxSettings::SIP_PORT,
                 PbxSettings::TLS_PORT,
                 PbxSettings::SIP_DEFAULT_EXPIRY,
+                PbxSettings::SIP_AUTH_PREFIX,
                 PbxSettings::SIP_MIN_EXPIRY,
                 PbxSettings::SIP_MAX_EXPIRY,
                 PbxSettings::PBX_LANGUAGE,

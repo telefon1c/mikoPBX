@@ -1193,7 +1193,7 @@ class SIPConf extends AsteriskConfigClass
         // Set the options for the auth section
         $options = [
             'type'     => 'auth',
-            'username' => $peer['extension'],
+            'username' => $peer['extension'].$this->generalSettings[PbxSettings::SIP_AUTH_PREFIX],
             'password' => $peer['secret'],
         ];
 

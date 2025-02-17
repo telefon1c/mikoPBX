@@ -94,6 +94,7 @@ class PbxSettings extends ModelsBase
             PbxSettings::EXTERNAL_TLS_PORT => '5061',
             PbxSettings::SIP_DEFAULT_EXPIRY => '120',
             PbxSettings::SIP_MIN_EXPIRY => '60',
+            PbxSettings::SIP_AUTH_PREFIX => '',
             PbxSettings::SIP_MAX_EXPIRY => '3600',
             PbxSettings::RTP_PORT_FROM => '10000',
             PbxSettings::RTP_PORT_TO => '10200',
