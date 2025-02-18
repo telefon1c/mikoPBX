@@ -423,12 +423,13 @@ class Fail2BanConf extends Injectable
 
         // Construct the Dropbear SSH server configuration string
         $conf = $commonConf .
-            "_daemon = (authpriv.warn )?dropbear\n" .
-            'prefregex = ^%(__prefix_line)s<F-CONTENT>(?:[Ll]ogin|[Bb]ad|[Ee]xit).+</F-CONTENT>$' . "\n" .
-            'failregex = ^[Ll]ogin attempt for nonexistent user (\'.*\' )?from <HOST>:\d+$' . "\n" .
-            '            ^[Bb]ad (PAM )?password attempt for .+ from <HOST>(:\d+)?$' . "\n" .
-            '            ^[Ee]xit before auth \(user \'.+\', \d+ fails\): Max auth tries reached - user \'.+\' from <HOST>:\d+\s*$' . "\n" .
-            "ignoreregex =\n";
+            "_daemon = (authpriv.warn )?dropbear" . PHP_EOL.
+            'prefregex = ^%(__prefix_line)s<F-CONTENT>(?:[Ll]ogin|[Bb]ad|[Ee]xit).+</F-CONTENT>$' . PHP_EOL .
+            'failregex = ^[Ll]ogin attempt for nonexistent user (\'.*\' )?from <HOST>:\d+$' . PHP_EOL .
+            '            ^[Bb]ad (PAM )?password attempt for .+ from <HOST>(:\d+)?$' . PHP_EOL .
+            '            ^[Ee]xit before auth \(user \'.+\', \d+ fails\): Max auth tries reached - user \'.+\' from <HOST>:\d+\s*$' . PHP_EOL .
+            '            ^[Ee]xit before auth from \<<HOST>:\d+\>:\s*Exited normally$' . PHP_EOL .
+            "ignoreregex =".PHP_EOL;
 
         // Write the configuration to the Dropbear SSH server file
         file_put_contents("$filterPath/dropbear.conf", $conf);
