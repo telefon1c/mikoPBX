@@ -165,6 +165,15 @@ const generalSettingsModify = {
                 },
             ],
         },
+        SIPAuthPrefix: {
+            identifier: 'SIPAuthPrefix',
+            rules: [
+                {
+                    type: 'regExp[/^[a-zA-Z]*$/]',
+                    prompt: globalTranslate.gs_SIPAuthPrefixInvalid
+                }
+            ],
+        },
     },
 
     // Rules for the web admin password field when it not equal to hiddenPassword

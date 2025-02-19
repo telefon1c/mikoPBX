@@ -110,9 +110,6 @@ mountoffload() {
   if [ "$size_bytes" -le 629145600 ]; then
     echo " - Start check: $disk"
     "/sbin/fsck.${type}" -f -p "$disk" >/dev/null 2>/dev/null
-  else
-    MOUNT_RESULT='Disk size exceeds 600MB, cannot be offload partition'
-    return
   fi
 
   # Mount the disk read-only using its UUID to /offload

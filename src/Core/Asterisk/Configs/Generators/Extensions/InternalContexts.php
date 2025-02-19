@@ -404,7 +404,6 @@ class InternalContexts extends AsteriskConfigClass
         $conf .= 'same => n,ExecIf($["${FROM_DID}${TO_CHAN}x" == "x" && "${FW_DISABLE_INTERNAL}" == "1"]?Goto(${EXTEN},fw_end))' . " \n\t";
         // QUEUE_SRC_CHAN - set if the call is a server action to an agent in the queue.
         // Checking if call forwarding is needed.
-        $conf .= 'same => n,ExecIf($["${DIALSTATUS}" != "ANSWER" && "${ISTRANSFER}x" != "x"]?Goto(internal-fw,${EXTEN},1))' . " \n\t";
         $conf .= 'same => n,ExecIf($["${DIALSTATUS}" != "ANSWER" && "${QUEUE_SRC_CHAN}x" == "x"]?Goto(internal-fw,${EXTEN},1))' . " \n\t";
         $conf .= 'same => n(fw_end),ExecIf($["${BLINDTRANSFER}x" != "x"]?AGI(check_redirect.php,${BLINDTRANSFER}))' . " \n\t";
         $conf .= 'same => n,Hangup()' . "\n\n";

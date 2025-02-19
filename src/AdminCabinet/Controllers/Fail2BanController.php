@@ -37,12 +37,16 @@ class Fail2BanController extends BaseController
         }
 
         // Get the Fail2Ban enabled status from PbxSettings
-        $fail2BanEnabled = PbxSettings::getValueByKey(PbxSettings::PBX_FAIL2BAN_ENABLED);
+        $fail2BanEnabled      = PbxSettings::getValueByKey(PbxSettings::PBX_FAIL2BAN_ENABLED);
+        $PBXFirewallMaxReqSec = PbxSettings::getValueByKey(PbxSettings::PBX_FIREWALL_MAX_REQ);
 
         // Set the Fail2BanEditForm and its data to the view
         $this->view->form = new Fail2BanEditForm(
             $rules,
-            [PbxSettings::PBX_FAIL2BAN_ENABLED => $fail2BanEnabled]
+            [
+                PbxSettings::PBX_FAIL2BAN_ENABLED => $fail2BanEnabled,
+                PbxSettings::PBX_FIREWALL_MAX_REQ => $PBXFirewallMaxReqSec,
+            ]
         );
         $this->view->submitMode = null;
     }
@@ -71,6 +75,7 @@ class Fail2BanController extends BaseController
         // Iterate over each property of the Fail2BanRules record
         foreach ($record as $key => $value) {
             switch ($key) {
+                case PbxSettings::PBX_FIREWALL_MAX_REQ:
                 case "id":
                     break;
                 default:
@@ -93,6 +98,9 @@ class Fail2BanController extends BaseController
             }
         }
 
+        if(isset($data[PbxSettings::PBX_FIREWALL_MAX_REQ])){
+            PbxSettings::setValue(PbxSettings::PBX_FIREWALL_MAX_REQ, $data[PbxSettings::PBX_FIREWALL_MAX_REQ]);
+        }
         // Set success flash message
         $this->flash->success($this->translation->_('ms_SuccessfulSaved'));
         $this->view->success = false;

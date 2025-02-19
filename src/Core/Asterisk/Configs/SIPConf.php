@@ -550,6 +550,7 @@ class SIPConf extends AsteriskConfigClass
             $data_peers = $this->getPeers();
             foreach ($data_peers as $peer) {
                 $conf .= "exten => $peer[extension],1,Set(__ISTRANSFER=transfer_) \n";
+                $conf .= "	same => n,Set(__QUEUE_SRC_CHAN=\${EMPTY}) \n";
                 $conf .= "	same => n,Goto(internal-users,$peer[extension],1) \n";
             }
         } while (!empty($data_peers));
@@ -1192,7 +1193,7 @@ class SIPConf extends AsteriskConfigClass
         // Set the options for the auth section
         $options = [
             'type'     => 'auth',
-            'username' => $peer['extension'],
+            'username' => $peer['extension'].$this->generalSettings[PbxSettings::SIP_AUTH_PREFIX],
             'password' => $peer['secret'],
         ];
 

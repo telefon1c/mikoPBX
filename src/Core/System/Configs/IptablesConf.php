@@ -48,6 +48,7 @@ class IptablesConf extends Injectable
     private string $sipPort;
     private string $tlsPort;
     private string $rtpPorts;
+    private int $maxReqSec = 0;
 
     /**
      * Firewall constructor.
@@ -56,19 +57,18 @@ class IptablesConf extends Injectable
      */
     public function __construct()
     {
+        $allPbxSettings = PbxSettings::getAllPbxSettings();
         // Check if the firewall is enabled.
-        $firewall_enable       = PbxSettings::getValueByKey(PbxSettings::PBX_FIREWALL_ENABLED);
-        $this->firewall_enable = ($firewall_enable === '1');
-
+        $this->firewall_enable  =  intval($allPbxSettings[PbxSettings::PBX_FIREWALL_ENABLED]) === 1;
         // Get the SIP, TLS, and RTP port settings.
-        $this->sipPort  = PbxSettings::getValueByKey(PbxSettings::SIP_PORT);
-        $this->tlsPort  = PbxSettings::getValueByKey(PbxSettings::TLS_PORT);
-        $defaultRTPFrom = PbxSettings::getValueByKey(PbxSettings::RTP_PORT_FROM);
-        $defaultRTPTo   = PbxSettings::getValueByKey(PbxSettings::RTP_PORT_TO);
-        $this->rtpPorts = "$defaultRTPFrom:$defaultRTPTo";
-
+        $this->sipPort          = $allPbxSettings[PbxSettings::SIP_PORT];
+        $this->tlsPort          = $allPbxSettings[PbxSettings::TLS_PORT];
+        $defaultRTPFrom         = $allPbxSettings[PbxSettings::RTP_PORT_FROM];
+        $defaultRTPTo           = $allPbxSettings[PbxSettings::RTP_PORT_TO];
+        $this->maxReqSec        = intval($allPbxSettings[PbxSettings::PBX_FIREWALL_MAX_REQ]);
+        $this->rtpPorts         = "$defaultRTPFrom:$defaultRTPTo";
         // Initialize the Fail2Ban configuration.
-        $this->fail2ban = new Fail2BanConf();
+        $this->fail2ban = new Fail2BanConf($allPbxSettings);
     }
 
     /**
@@ -112,7 +112,17 @@ class IptablesConf extends Injectable
         if ($this->firewall_enable) {
             $arr_command   = [];
             $arr_command[] = $this->getIptablesInputRule('', '-m conntrack --ctstate ESTABLISHED,RELATED');
-
+            if($this->maxReqSec > 0){
+                $advancedSipRules = [
+                    [$this->sipPort, 'udp'],
+                    [$this->sipPort, 'tcp'],
+                    [$this->tlsPort, 'tcp']
+                ];
+                foreach ($advancedSipRules as [$port, $protocol]) {
+                    $arr_command[] = $this->getIptablesInputRule($port, "-p $protocol -m state --state NEW -m recent --set --name SipAttacks", '');
+                    $arr_command[] = $this->getIptablesInputRule($port, "-p $protocol -m state --state NEW -m recent --update --seconds 1 --hitcount $this->maxReqSec --name SipAttacks", 'DROP');
+                }
+            }
             // Add allowed services
             $this->addMainFirewallRules($arr_command);
             $this->addAdditionalFirewallRules($arr_command);
@@ -192,8 +202,10 @@ class IptablesConf extends Injectable
             $data_port = '--dport ' . $dport;
         }
         $other_data = trim($other_data);
-
-        return "iptables -A INPUT $other_data $data_port -j $action";
+        if (trim($action) !== '') {
+            $action = '-j ' . $action;
+        }
+        return "iptables -A INPUT $other_data $data_port $action";
     }
 
     /**

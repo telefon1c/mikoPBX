@@ -150,6 +150,7 @@ class ProcessPBXSettings extends Injectable
                 PbxSettings::SIP_PORT,
                 PbxSettings::TLS_PORT,
                 PbxSettings::SIP_DEFAULT_EXPIRY,
+                PbxSettings::SIP_AUTH_PREFIX,
                 PbxSettings::SIP_MIN_EXPIRY,
                 PbxSettings::SIP_MAX_EXPIRY,
                 PbxSettings::PBX_LANGUAGE,
@@ -205,6 +206,7 @@ class ProcessPBXSettings extends Injectable
                 PbxSettings::SSH_PORT,
                 PbxSettings::PBX_FIREWALL_ENABLED,
                 PbxSettings::PBX_FAIL2BAN_ENABLED,
+                PbxSettings::PBX_FIREWALL_MAX_REQ,
             ],
             'actions' => [
                 ReloadFirewallAction::class,

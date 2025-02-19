@@ -56,6 +56,7 @@ trait PbxSettingsConstantsTrait
     public const string SIP_DEFAULT_EXPIRY = 'SIPDefaultExpiry';
     public const string SIP_MIN_EXPIRY = 'SIPMinExpiry';
     public const string SIP_MAX_EXPIRY = 'SIPMaxExpiry';
+    public const string SIP_AUTH_PREFIX = 'SIPAuthPrefix';
     public const string RTP_PORT_FROM = 'RTPPortFrom';
     public const string RTP_PORT_TO = 'RTPPortTo';
     public const string RTP_STUN_SERVER = 'RTPStunServer';
@@ -121,6 +122,7 @@ trait PbxSettingsConstantsTrait
     // Firewall settings
     public const string PBX_FIREWALL_ENABLED = 'PBXFirewallEnabled';
     public const string PBX_FAIL2BAN_ENABLED = 'PBXFail2BanEnabled';
+    public const string PBX_FIREWALL_MAX_REQ = 'PBXFirewallMaxReqSec';
     public const string PBX_ALLOW_GUEST_CALLS = 'PBXAllowGuestCalls';
 
     // Miscellaneous settings

@@ -186,6 +186,7 @@ class IVRConf extends AsteriskConfigClass
         $db_data = IvrMenu::find()->toArray();
         foreach ($db_data as $ivr) {
             $conf .= 'exten => _' . $ivr['extension'] . ',1,Set(__ISTRANSFER=transfer_)' . " \n\t";
+            $conf .= 'same => n,Set(__QUEUE_SRC_CHAN=${EMPTY})' . " \n\t";
             $conf .= 'same => n,Goto(internal,${EXTEN},1)' . " \n";
         }
 
