@@ -21,6 +21,7 @@
 namespace MikoPBX\Core\System;
 
 use MikoPBX\Common\Models\PbxSettings;
+use MikoPBX\Core\System\CloudProvisioning\AlibabaCloud;
 use MikoPBX\Core\System\CloudProvisioning\AWSCloud;
 use MikoPBX\Core\System\CloudProvisioning\AzureCloud;
 use MikoPBX\Core\System\CloudProvisioning\CloudProvider;
@@ -58,6 +59,7 @@ class CloudProvisioning
             AzureCloud::CloudID => new AzureCloud(),
             AWSCloud::CloudID => new AWSCloud(),
             DigitalOceanCloud::CloudID => new DigitalOceanCloud(),
+            AlibabaCloud::CloudID=>new AlibabaCloud(),
         ];
 
         foreach ($providers as $cloudId => $provider) {
